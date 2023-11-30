@@ -13,6 +13,7 @@ use nalgebra::{Point2, Vector2};
 use ordered_float::OrderedFloat;
 
 mod collision;
+mod constants;
 mod manifold;
 mod object;
 mod scene;
