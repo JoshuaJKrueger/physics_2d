@@ -12,3 +12,4 @@ pub type Radian = f64;
 pub type RadianPerSec = f64;
 pub type NewtonMeter = f64;
 pub type SquareMeter = OrderedFloat<f64>;
+pub type MeterPerSquaredSecond = f64;
