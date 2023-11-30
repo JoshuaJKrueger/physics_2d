@@ -4,7 +4,7 @@ use graphics::{Context, ellipse, line::Line, Transformed};
 use opengl_graphics::GlGraphics;
 use rand::Rng;
 
-use crate::types::{Meter, SquareMeter, Radian, Kilogram, InvKilogram, KilogramMeterSquared, MeterSquaredPerKilogram, KilogramPerCubicMeter, NormalizedCoefficient, RadianPerSec, NewtonMeter};
+use crate::types::{Meter, SquareMeter, Radian, Kilogram, InvKilogram, KilogramMeterSquared, MeterSquaredPerKilogram, KilogramPerCubicMeter, NormalizedCoefficient, RadianPerSec, NewtonMeter, MeterPerSec};
 
 
 // nalgebra only supports 3D cross product
@@ -32,7 +32,7 @@ pub struct Transform {
     pub pos: Point2<f64>,
     rot: Rotation2<f64>,
     scale: Vector2<f64>,
-    orientation: Radian,
+    pub orientation: Radian,
 }
 
 impl Transform {
@@ -50,7 +50,7 @@ pub struct MassData {
     pub mass: Kilogram,
     pub inv_mass: InvKilogram,
     moment_inertia: KilogramMeterSquared,
-    inv_m_inertia: MeterSquaredPerKilogram,
+    pub inv_m_inertia: MeterSquaredPerKilogram,
 }
 
 impl MassData {
@@ -86,9 +86,9 @@ impl Material {
 }
 
 pub struct Kinematics {
-    pub vel: Vector2<f64>,
+    pub vel: Vector2<MeterPerSec>,
     pub angular_vel: RadianPerSec,
-    torque: NewtonMeter,
+    pub torque: NewtonMeter,
 }
 
 impl Kinematics {
@@ -141,7 +141,7 @@ impl Object {
             Kinematics::new(vel, angular_vel, torque)
         });
 
-        let force = Vector2::new(0.0, 0.0); // Initialize force to zero
+        let force = Vector2::zeros();
 
         Object {shape, tx, mat, mass_data, kinematics, force}
     }
