@@ -49,7 +49,8 @@ impl Manifold {
         match (a, b) {
             (ShapeTag::Circle { .. }, ShapeTag::Circle { .. }) => circle_circle(self),
             (ShapeTag::Polygon { .. }, ShapeTag::Polygon { .. }) => polygon_polygon(self),
-            _ => circle_polygon(self, None),
+            (ShapeTag::Circle { .. }, ShapeTag::Polygon { .. }) => circle_polygon(self, true),
+            _ => circle_polygon(self, false),
         };
     }
 
