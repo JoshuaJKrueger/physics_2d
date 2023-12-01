@@ -1,4 +1,4 @@
-use nalgebra::{Point2, Rotation2, Vector2};
+use nalgebra::{Point2, Rotation2, Vector2, Matrix2};
 use ordered_float::OrderedFloat;
 use graphics::{Context, ellipse, line::Line, Transformed};
 use opengl_graphics::GlGraphics;
@@ -16,7 +16,7 @@ fn cross(a: &Vector2<f64>, b: &Vector2<f64>) -> f64 {
 
 pub enum Shape {
     Circle { radius: Meter },
-    Polygon { vertices: Vec<Point2<f64>> },
+    Polygon { vertices: Vec<Point2<f64>>, orient: Matrix2<f64>, normals: Vec<Vector2<f64>> },
 }
 
 impl Shape {
@@ -27,7 +27,7 @@ impl Shape {
                 let m = PI * r * r * density;
                 MassData::new(m, m * r * r)
             },
-            Shape::Polygon { ref mut vertices } => {
+            Shape::Polygon { ref mut vertices, .. } => {
                 let mut centroid = Vector2::zeros();
                 let mut area = 0.0;
                 let mut mmi = 0.0;
@@ -200,7 +200,7 @@ impl Object {
             Shape::Circle { radius } => {
                 ellipse::Ellipse::new_border(WHITE, 1.0).draw(ellipse::circle(self.tx.pos.x, self.tx.pos.y, **radius), &c.draw_state, c.transform, gl);
             }
-            Shape::Polygon { vertices } => {
+            Shape::Polygon { vertices, .. } => {
                 // piston polygon only has a filled version
                 for i in 0..vertices.len() {
                     let next_index = (i + 1) % vertices.len();
