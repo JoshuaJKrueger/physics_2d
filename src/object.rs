@@ -30,7 +30,7 @@ impl Shape {
             Shape::Polygon { ref mut vertices } => {
                 let mut centroid = Vector2::zeros();
                 let mut area = 0.0;
-                let mut I = 0.0;
+                let mut mmi = 0.0;
 
                 // Calculate area and centroid
                 for (p1, p2) in vertices.iter().zip(vertices.iter().cycle().skip(1)) {
@@ -46,7 +46,7 @@ impl Shape {
                     let int_x_sqrd = p1.coords.x * p1.coords.x + p2.coords.x * p1.coords.x + p2.coords.x * p2.coords.x;
                     let int_y_sqrd = p1.coords.y * p1.coords.y + p2.coords.y * p1.coords.y + p2.coords.y * p2.coords.y;
 
-                    I += (0.25 * ONE_THIRD * signed_area) * (int_x_sqrd + int_y_sqrd)
+                    mmi += (0.25 * ONE_THIRD * signed_area) * (int_x_sqrd + int_y_sqrd)
                 }
 
                 centroid *= 1.0 / area;
@@ -56,7 +56,7 @@ impl Shape {
                     vert.coords -= centroid;
                 }
 
-                MassData::new(density * area, I)
+                MassData::new(density * area, mmi)
             },
         }
     }
