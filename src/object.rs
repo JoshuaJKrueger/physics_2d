@@ -3,8 +3,10 @@ use ordered_float::OrderedFloat;
 use graphics::{Context, ellipse, line::Line, Transformed};
 use opengl_graphics::GlGraphics;
 use rand::Rng;
+use std::f64::consts::PI;
 
 use crate::types::{Meter, SquareMeter, Radian, Kilogram, InvKilogram, KilogramMeterSquared, MeterSquaredPerKilogram, KilogramPerCubicMeter, NormalizedCoefficient, RadianPerSec, NewtonMeter, MeterPerSec};
+use crate::constants::WHITE;
 
 
 // nalgebra only supports 3D cross product
@@ -18,14 +20,29 @@ pub enum Shape {
 }
 
 impl Shape {
-    fn calculate_area(&self) -> SquareMeter {
+    fn calculate_mass_data(&self, density: KilogramPerCubicMeter) -> MassData {
         match self {
-            Shape::Circle { radius} => OrderedFloat(std::f64::consts::PI) * radius * radius,
+            Shape::Circle { radius } => {
+                let m = OrderedFloat(PI) * radius * radius * density;
+                MassData::new(*m, *(m * radius * radius))
+            },
             Shape::Polygon { vertices } => {
                 unimplemented!()
             },
         }
     }
+
+    pub fn tag(&self) -> ShapeTag {
+        match self {
+            Shape::Circle { .. } => ShapeTag::Circle,
+            Shape::Polygon { .. } => ShapeTag::Polygon,
+        }
+    }
+}
+
+pub enum ShapeTag {
+    Circle,
+    Polygon,
 }
 
 pub struct Transform {
@@ -124,13 +141,7 @@ impl Object {
             )
         });
 
-        let mass_data = mass_data.unwrap_or_else(|| {
-            // Generate random mass data
-            let mass = rand::thread_rng().gen_range(1.0..10.0);
-            let moment_inertia = rand::thread_rng().gen_range(0.1..10.0);
-
-            MassData::new(mass, moment_inertia)
-        });
+        let mass_data = mass_data.unwrap_or_else(|| shape.calculate_mass_data(mat.density));
 
         let kinematics = kinematics.unwrap_or_else(|| {
             // Generate random kinematics properties
@@ -156,7 +167,6 @@ impl Object {
     }
 
     pub fn draw(&self, c: Context, gl: &mut GlGraphics) {
-        const WHITE: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
         match &self.shape {
             Shape::Circle { radius } => {
                 ellipse::Ellipse::new_border(WHITE, 1.0).draw(ellipse::circle(self.tx.pos.x, self.tx.pos.y, **radius), &c.draw_state, c.transform, gl);
