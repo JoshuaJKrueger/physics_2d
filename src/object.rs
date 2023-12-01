@@ -6,7 +6,7 @@ use rand::Rng;
 use std::f64::consts::PI;
 
 use crate::types::{Meter, Radian, Kilogram, InvKilogram, KilogramMeterSquared, MeterSquaredPerKilogram, KilogramPerCubicMeter, NormalizedCoefficient, RadianPerSec, NewtonMeter, MeterPerSec};
-use crate::constants::WHITE;
+use crate::constants::{WHITE, ONE_THIRD};
 
 
 // nalgebra only supports 3D cross product
@@ -20,14 +20,43 @@ pub enum Shape {
 }
 
 impl Shape {
-    fn calculate_mass_data(&self, density: KilogramPerCubicMeter) -> MassData {
+    fn calculate_mass_data(&mut self, density: KilogramPerCubicMeter) -> MassData {
         match self {
             Shape::Circle { radius } => {
-                let m = OrderedFloat(PI) * radius * radius * density;
-                MassData::new(*m, *(m * radius * radius))
+                let r = **radius;
+                let m = PI * r * r * density;
+                MassData::new(m, m * r * r)
             },
-            Shape::Polygon { vertices } => {
-                unimplemented!()
+            Shape::Polygon { ref mut vertices } => {
+                let mut centroid = Vector2::zeros();
+                let mut area = 0.0;
+                let mut I = 0.0;
+
+                // Calculate area and centroid
+                for (p1, p2) in vertices.iter().zip(vertices.iter().cycle().skip(1)) {
+                    // Get the signed area of the triangle formed by (0, 0), p1, and p2
+                    let signed_area = cross(&p1.coords, &p2.coords);
+                    let tri_area = 0.5 * signed_area;
+
+                    area += tri_area;
+                    // Accumulate the weighted centroid coordinates.
+                    centroid += tri_area * ONE_THIRD * (p1.coords + p2.coords);
+
+                    // Calculate squared integral terms for inertia calculation.
+                    let int_x_sqrd = p1.coords.x * p1.coords.x + p2.coords.x * p1.coords.x + p2.coords.x * p2.coords.x;
+                    let int_y_sqrd = p1.coords.y * p1.coords.y + p2.coords.y * p1.coords.y + p2.coords.y * p2.coords.y;
+
+                    I += (0.25 * ONE_THIRD * signed_area) * (int_x_sqrd + int_y_sqrd)
+                }
+
+                centroid *= 1.0 / area;
+
+                // Translate vertices to be centered around the origin
+                for vert in vertices {
+                    vert.coords -= centroid;
+                }
+
+                MassData::new(density * area, I)
             },
         }
     }
@@ -129,7 +158,7 @@ pub struct Object
 }
 
 impl Object {
-    pub fn new(shape: Shape, tx: Transform, mat: Option<Material>, mass_data: Option<MassData>, kinematics: Option<Kinematics>) -> Self {
+    pub fn new(mut shape: Shape, tx: Transform, mat: Option<Material>, mass_data: Option<MassData>, kinematics: Option<Kinematics>) -> Self {
         let mat = mat.unwrap_or_else(|| {
             // Generate random material properties
             let density = rand::thread_rng().gen_range(0.1..10.0);
