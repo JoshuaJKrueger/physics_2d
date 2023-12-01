@@ -8,6 +8,7 @@ pub const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
 pub const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
 pub const WHITE: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 pub const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
+pub const ONE_THIRD: f64 = 1.0 / 3.0;
 // For positional correction
 pub const PEN_ALLOWANCE: NormalizedCoefficient = OrderedFloat(0.05);
 pub const PERCENT_CORRECTION: NormalizedCoefficient = OrderedFloat(0.4);
