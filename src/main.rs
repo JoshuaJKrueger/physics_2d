@@ -11,6 +11,9 @@ use piston::window::WindowSettings;
 
 use nalgebra::{Point2, Vector2};
 use ordered_float::OrderedFloat;
+use std::rc::Rc;
+use std::cell::RefCell;
+use std::f64::INFINITY;
 
 mod collision;
 mod constants;
@@ -21,17 +24,16 @@ mod types;
 
 use scene::Scene;
 use object::{Object, Shape, Transform, Material, MassData, Kinematics};
+use constants::BLACK;
 
-pub struct App<'a> {
+pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
-    scene: Scene<'a>,
+    scene: Scene,
 }
 
-impl<'a> App<'a> {
+impl App {
     fn render(&mut self, args: &RenderArgs) {
         use graphics::*;
-
-        const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 
         self.gl.draw(args.viewport(), |c: Context, gl: &mut GlGraphics| {
             clear(BLACK, gl);
@@ -45,14 +47,23 @@ impl<'a> App<'a> {
     }
 }
 
-fn create_test_objects() -> Vec<Object> {
+fn create_test_objects() -> Vec<Rc<RefCell<Object>>> {
     // Create a circle
     let circle = Object::new(
         Shape::Circle { radius: OrderedFloat(50.0) },
         Transform::new(Point2::new(100.0, 100.0)),
-        Some(Material::new(1.0, OrderedFloat(0.5), OrderedFloat(0.3), OrderedFloat(0.2))),
-        Some(MassData::new(5.0, 1000.0)),
-        Some(Kinematics::new(Vector2::new(0.0, 0.0), 0.0, 0.0)),
+        None,
+        None,
+        None,
+    );
+
+    // Create a circle
+    let circle2 = Object::new(
+        Shape::Circle { radius: OrderedFloat(50.0) },
+        Transform::new(Point2::new(100.0, 300.0)),
+        None,
+        None,
+        None,
     );
 
     // Create a convex polygon (triangle)
@@ -64,13 +75,13 @@ fn create_test_objects() -> Vec<Object> {
                 Point2::new(300.0, 200.0),
             ],
         },
-        Transform::new(Point2::new(0.0, 0.0)), // Set the position accordingly
-        Some(Material::new(1.0, OrderedFloat(0.5), OrderedFloat(0.3), OrderedFloat(0.2))),
-        Some(MassData::new(5.0, 1000.0)),
-        Some(Kinematics::new(Vector2::new(0.0, 0.0), 0.0, 0.0)),
+        Transform::new(Point2::new(0.0, 0.0)),
+        None,
+        None,
+        None,
     );
 
-    // Create a concave polygon (hourglass shape)
+    // Create a concave polygon
     let concave_polygon = Object::new(
         Shape::Polygon {
             vertices: vec![
@@ -81,13 +92,31 @@ fn create_test_objects() -> Vec<Object> {
                 Point2::new(500.0, 200.0),
             ],
         },
-        Transform::new(Point2::new(0.0, 0.0)), // Set the position accordingly
-        Some(Material::new(1.0, OrderedFloat(0.5), OrderedFloat(0.3), OrderedFloat(0.2))),
-        Some(MassData::new(5.0, 1000.0)),
-        Some(Kinematics::new(Vector2::new(0.0, 0.0), 0.0, 0.0)),
+        Transform::new(Point2::new(0.0, 0.0)),
+        None,
+        None,
+        None,
     );
 
-    vec![circle, convex_polygon, concave_polygon]
+    // Create a floor
+    let floor = Object::new(
+        Shape::Polygon {
+            vertices: vec![
+                Point2::new(10.0, 580.0),
+                Point2::new(790.0, 580.0),
+                Point2::new(790.0, 590.0),
+                Point2::new(10.0, 590.0),
+            ],
+        },
+        Transform::new(Point2::new(0.0, 0.0)),
+        Some(Material::new(INFINITY, OrderedFloat(1.0), OrderedFloat(1.0), OrderedFloat(1.0))),
+        Some(MassData::new(INFINITY, INFINITY)),
+        Some(Kinematics::new(Vector2::zeros(), 0.0, 0.0)),
+    );
+
+
+
+    [circle, circle2, convex_polygon, concave_polygon, floor].into_iter().map(| s | { Rc::new(RefCell::new(s)) }).collect()
 }
 
 fn main() {
