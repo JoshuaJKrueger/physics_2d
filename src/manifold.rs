@@ -1,15 +1,18 @@
 use nalgebra::Vector2;
 use std::cmp::{min, max};
-use std::f64::{EPSILON, INFINITY};
+use std::f64::EPSILON;
 use ordered_float::OrderedFloat;
+use std::cell::RefCell;
+use std::rc::Rc;
 
-use crate::object::Object;
+use crate::object::{Object, ShapeTag};
 use crate::types::{Meter, NormalizedCoefficient};
-use crate::constants::GRAVITY;
+use crate::constants::{GRAVITY, PEN_ALLOWANCE, PERCENT_CORRECTION};
+use crate::collision::{circle_circle, circle_polygon, polygon_polygon};
 
-pub struct Manifold<'a> {
-    a: &'a mut Object,
-    b: &'a mut Object,
+pub struct Manifold {
+    pub a: Rc<RefCell<Object>>,
+    pub b: Rc<RefCell<Object>>,
     pub penetration: Meter,
     pub normal: Vector2<f64>,
     pub contacts: [Vector2<f64>; 2],
@@ -24,8 +27,8 @@ fn cross(a: f64, b: Vector2<f64>) -> Vector2<f64> {
     Vector2::new(-a * b.y, a * b.x)
 }
 
-impl<'a> Manifold<'a> {
-    pub fn new(a: &'a mut Object, b: &'a mut Object) -> Manifold<'a> {
+impl Manifold {
+    pub fn new(a: Rc<RefCell<Object>>, b: Rc<RefCell<Object>>) -> Manifold {
         Manifold {
             a,
             b,
@@ -40,18 +43,25 @@ impl<'a> Manifold<'a> {
     }
 
     pub fn solve(&mut self) {
-        unimplemented!()
+        let a = self.a.borrow().shape.tag();
+        let b = self.b.borrow().shape.tag();
+
+        match (a, b) {
+            (ShapeTag::Circle { .. }, ShapeTag::Circle { .. }) => circle_circle(self),
+            (ShapeTag::Polygon { .. }, ShapeTag::Polygon { .. }) => polygon_polygon(self),
+            _ => circle_polygon(self, None),
+        };
     }
 
     pub fn initialize(&mut self, dt: f64) {
-        self.mixed_restitution = min(self.a.mat.restitution, self.b.mat.restitution);
-        self.mixed_dynamic_friction = OrderedFloat((self.a.mat.dynamic_friction * self.b.mat.dynamic_friction).sqrt());
-        self.mixed_static_friction = OrderedFloat((self.a.mat.static_friction * self.b.mat.static_friction).sqrt());
+        self.mixed_restitution = min(self.a.borrow().mat.restitution, self.b.borrow().mat.restitution);
+        self.mixed_dynamic_friction = OrderedFloat((self.a.borrow().mat.dynamic_friction * self.b.borrow().mat.dynamic_friction).sqrt());
+        self.mixed_static_friction = OrderedFloat((self.a.borrow().mat.static_friction * self.b.borrow().mat.static_friction).sqrt());
 
         for i in 0..self.contact_count {
-            let a_radii = self.contacts[i] - self.a.tx.pos.coords;
-            let b_radii = self.contacts[i] - self.b.tx.pos.coords;
-            let rel_vel = self.b.kinematics.vel + cross(self.b.kinematics.angular_vel, b_radii) - self.a.kinematics.vel - cross(self.a.kinematics.angular_vel, a_radii);
+            let a_radii = self.contacts[i] - self.a.borrow().tx.pos.coords;
+            let b_radii = self.contacts[i] - self.b.borrow().tx.pos.coords;
+            let rel_vel = self.b.borrow().kinematics.vel + cross(self.b.borrow().kinematics.angular_vel, b_radii) - self.a.borrow().kinematics.vel - cross(self.a.borrow().kinematics.angular_vel, a_radii);
 
             if rel_vel.norm_squared() < (dt * GRAVITY).norm_squared() + EPSILON {
                 self.mixed_restitution = OrderedFloat(0.0);
@@ -60,7 +70,7 @@ impl<'a> Manifold<'a> {
     }
 
     pub fn apply_impulse(&mut self) {
-        if self.a.mass_data.mass == INFINITY && self.b.mass_data.mass == INFINITY {
+        if self.a.borrow().mass_data.mass.is_infinite() && self.b.borrow().mass_data.mass.is_infinite() {
             self.infinite_mass_correction();
             return;
         }
@@ -71,15 +81,16 @@ impl<'a> Manifold<'a> {
     }
 
     pub fn positional_correction(&mut self) {
-        const PEN_ALLOWANCE: NormalizedCoefficient = OrderedFloat(0.05);
-        const PERCENT_CORRECTION: NormalizedCoefficient = OrderedFloat(0.4);
-        let correction = *(max(self.penetration - PEN_ALLOWANCE, OrderedFloat(0.0)) / (self.a.mass_data.inv_mass + self.b.mass_data.inv_mass)) * self.normal * *PERCENT_CORRECTION;
-        self.a.tx.pos -= correction * self.a.mass_data.inv_mass;
-        self.b.tx.pos += correction * self.b.mass_data.inv_mass;
+        let correction = *(max(self.penetration - PEN_ALLOWANCE, OrderedFloat(0.0)) / (self.a.borrow().mass_data.inv_mass + self.b.borrow().mass_data.inv_mass)) * self.normal * *PERCENT_CORRECTION;
+        let a_inv_mass = self.a.borrow().mass_data.inv_mass;
+        let b_inv_mass = self.b.borrow().mass_data.inv_mass;
+
+        self.a.borrow_mut().tx.pos -= correction * a_inv_mass;
+        self.b.borrow_mut().tx.pos += correction * b_inv_mass;
     }
 
     fn infinite_mass_correction(&mut self) {
-        self.a.kinematics.vel = Vector2::zeros();
-        self.b.kinematics.vel = Vector2::zeros();
+        self.a.borrow_mut().kinematics.vel = Vector2::zeros();
+        self.b.borrow_mut().kinematics.vel = Vector2::zeros();
     }
 }
