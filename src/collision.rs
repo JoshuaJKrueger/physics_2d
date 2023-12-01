@@ -42,30 +42,26 @@ pub fn circle_polygon(manifold: &mut Manifold, circle_first: bool) {
         manifold.contact_count = 0;
 
         // Transform circle to polygon model space
-        let mut cen = orient.transpose() * (a.tx.pos.coords - b.tx.pos.coords);
+        let cen = orient.transpose() * (a.tx.pos.coords - b.tx.pos.coords);
 
         // Find min penetration edge
-        let mut separation = NEG_INFINITY;
-        let mut face_norm = 0;
-        for i in 0..vertices.len() {
-            let s = normals[i].dot(&(cen - vertices[i].coords));
+        let (face_norm, separation) = vertices.iter()
+            .enumerate()
+            .fold((0, NEG_INFINITY), |(face_norm, separation), (i, vertex)| {
+                let s = normals[i].dot(&(cen - vertex.coords));
+                if s > **radius { (face_norm, separation) }
+                else if s > separation { (i, s) }
+                else { (face_norm, separation) }
+            });
 
-            if s > **radius { return; }
-
-            if s > separation {
-                separation = s;
-                face_norm = i;
-            }
-        }
+        if separation > **radius { return; }
 
         // Get the face's verts
-        let mut v1 = vertices[face_norm].coords;
-        let i = if face_norm + 1 < vertices.len() { face_norm + 1 } else { 0 };
-        let mut v2 = vertices[i].coords;
+        let v1 = vertices[face_norm].coords;
+        let v2 = vertices[(face_norm + 1) % vertices.len()].coords;
 
         // Check if cen is in polygon
-        if separation < EPSILON
-        {
+        if separation < EPSILON {
             manifold.contact_count = 1;
             manifold.normal = -(orient * normals[face_norm]);
             manifold.contacts[0] = manifold.normal * **radius + a.tx.pos.coords;
@@ -79,25 +75,17 @@ pub fn circle_polygon(manifold: &mut Manifold, circle_first: bool) {
 
         manifold.penetration = radius - separation;
 
-        // Near v1
-        if d1 <= 0.0 {
-            if distsqr(cen, v1) > *radius * *radius { return; }
+        // Near v1 or v2
+        if d1 <= 0.0 || d2 <= 0.0 {
+            let (vertex, dist) = if d1 <= 0.0 { (v1, distsqr(cen, v1)) } else { (v2, distsqr(cen, v2)) };
+
+            if dist > *radius * *radius { return; }
 
             manifold.contact_count = 1;
-            let mut norm = v1 - cen;
+            let mut norm = vertex - cen;
             norm = orient * norm;
             manifold.normal = norm.normalize();
-            v1 = orient * v1 + b.tx.pos.coords;
-            manifold.contacts[0] = v1;
-        } else if d2 <= 0.0 { // Near v2
-            if distsqr(cen, v2) > *radius * *radius { return; }
-
-            manifold.contact_count = 1;
-            let mut norm = v2 - cen;
-            norm = orient * norm;
-            manifold.normal = norm.normalize();
-            v2 = orient * v2 + b.tx.pos.coords;
-            manifold.contacts[0] = v2;
+            manifold.contacts[0] = orient * vertex + b.tx.pos.coords;
         } else { // Near face
             let mut norm = normals[face_norm];
             if (cen - v1).dot(&norm) > **radius { return; }
