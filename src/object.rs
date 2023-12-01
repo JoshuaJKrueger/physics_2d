@@ -5,7 +5,7 @@ use opengl_graphics::GlGraphics;
 use rand::Rng;
 use std::f64::consts::PI;
 
-use crate::types::{Meter, SquareMeter, Radian, Kilogram, InvKilogram, KilogramMeterSquared, MeterSquaredPerKilogram, KilogramPerCubicMeter, NormalizedCoefficient, RadianPerSec, NewtonMeter, MeterPerSec};
+use crate::types::{Meter, Radian, Kilogram, InvKilogram, KilogramMeterSquared, MeterSquaredPerKilogram, KilogramPerCubicMeter, NormalizedCoefficient, RadianPerSec, NewtonMeter, MeterPerSec};
 use crate::constants::WHITE;
 
 
