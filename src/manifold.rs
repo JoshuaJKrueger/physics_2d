@@ -59,7 +59,7 @@ impl Manifold {
         for i in 0..self.contact_count {
             let a_radii = self.contacts[i] - self.a.borrow().tx.pos.coords;
             let b_radii = self.contacts[i] - self.b.borrow().tx.pos.coords;
-            let rel_vel = self.b.borrow().kinematics.vel + cross_s_v(self.b.borrow().kinematics.angular_vel, b_radii) - self.a.borrow().kinematics.vel - cross_s_v(self.a.borrow().kinematics.angular_vel, a_radii);
+            let rel_vel = self.b.borrow().kinematics.vel + cross_s_v(self.b.borrow().kinematics.angular_vel, &b_radii) - self.a.borrow().kinematics.vel - cross_s_v(self.a.borrow().kinematics.angular_vel, &a_radii);
 
             if rel_vel.norm_squared() < (dt * GRAVITY).norm_squared() + EPSILON {
                 self.mixed_restitution = OrderedFloat(0.0);
