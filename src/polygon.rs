@@ -2,6 +2,7 @@ use graphics::{Context, line::Line, Transformed};
 use opengl_graphics::GlGraphics;
 
 use nalgebra::{Matrix2, Point2, Vector2};
+use std::f64::EPSILON;
 
 use crate::types::KilogramPerCubicMeter;
 use crate::mass_data::MassData;
@@ -17,19 +18,21 @@ pub struct Polygon {
 }
 
 impl Polygon {
-    pub fn new(vertices: Vec<Point2<f64>>, orient: Option<Matrix2<f64>>) -> Result<Self, &'static str> {
+    pub fn new(vertices: Vec<Point2<f64>>, orient: Option<Matrix2<f64>>) -> Self {
         let orient = orient.unwrap_or_else(|| Matrix2::identity());
 
         // Ensure enough vertices to make polygon
-        if vertices.len() <= 2 { return Err("Not enough vertices"); }
+        if vertices.len() <= 2 { todo!("Error") }
 
-        let right_most = getRightMostPoint(vertices);
+        let right_most = get_right_most_vert_idx(&vertices);
+        // TODO: Fix hull generation and use it
+        // let hull = build_hull(&vertices, right_most);
+        let normals = compute_norms(&vertices);
 
-        
-        Ok(Self { orient, vertices, normals })
+        Self { orient, vertices: vertices, normals }
     }
 
-    fn setBoundingBox(&mut self) {
+    fn set_bounding_box(&mut self) {
         unimplemented!()
     }
 
@@ -90,14 +93,58 @@ impl Shape for Polygon {
     }
 }
 
-fn getRightMostPoint(verts: &Vec<Point2<f64>) -> Point2<f64> {
-    unimplemented!()
+fn get_right_most_vert_idx(verts: &[Point2<f64>]) -> usize {
+    let (right_most, _) = verts.iter().enumerate().fold(
+        (0, verts[0].x),
+        |(right_most, highest_x), (i, vertex)| {
+            if vertex.x > highest_x { (i, vertex.x) }
+            else if vertex.x == highest_x && vertex.y < verts[right_most].y { (i, highest_x) }
+            else { (right_most, highest_x) }
+        },
+    );
+
+    right_most
 }
 
-fn buildHull(&mut self) {
-    unimplemented!()
+fn build_hull(verts: &[Point2<f64>], right_most_idx: usize) -> Vec<Point2<f64>> {
+    let mut hull = Vec::new();
+    let mut index_hull = right_most_idx;
+
+    loop {
+        hull.push(verts[index_hull]);
+
+        let mut next_hull_index = 0;
+        for i in 1..verts.len() {
+            if next_hull_index == index_hull {
+                next_hull_index = i;
+                continue;
+            }
+
+            let e1 = verts[next_hull_index] - verts[hull.len() - 1];
+            let e2 = verts[i] - verts[hull.len() - 1];
+            let c = cross_v_v(&e1, &e2);
+
+            if c < 0.0 || (c == 0.0 && e2.norm_squared() > e1.norm_squared()) {
+                next_hull_index = i;
+            }
+        }
+        
+        if next_hull_index == right_most_idx {
+            break;
+        }
+
+        index_hull = next_hull_index;
+    }
+
+    hull
 }
 
-fn compute_norms(&mut self) {
-    unimplemented!()
+fn compute_norms(verts: &Vec<Point2<f64>>) -> Vec<Vector2<f64>> {
+    verts.iter().zip(verts.iter().cycle().skip(1))
+        .map(|(&p1, &p2)| {
+            let face = p2 - p1;
+            assert!(face.norm_squared() > EPSILON * EPSILON);
+            Vector2::new(face.y, -face.x).normalize()
+        })
+        .collect()
 }
