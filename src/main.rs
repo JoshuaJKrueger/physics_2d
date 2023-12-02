@@ -69,7 +69,7 @@ fn create_test_objects() -> Vec<Rc<RefCell<Object>>> {
         Transform::new(Point2::new(100.0, 100.0)),
         None,
         None,
-        None,
+        Some(Kinematics::new(Vector2::zeros(), 0.0, 0.0)),
     );
 
     // Create a circle
@@ -78,7 +78,7 @@ fn create_test_objects() -> Vec<Rc<RefCell<Object>>> {
         Transform::new(Point2::new(100.0, 300.0)),
         None,
         None,
-        None,
+        Some(Kinematics::new(Vector2::zeros(), 0.0, 0.0)),
     );
 
     // Create a convex polygon (triangle)
@@ -94,7 +94,7 @@ fn create_test_objects() -> Vec<Rc<RefCell<Object>>> {
         Transform::new(Point2::new(400.0, 200.0)),
         None,
         None,
-        None,
+        Some(Kinematics::new(Vector2::zeros(), 0.0, 0.0)),
     );
 
     // Create a concave polygon
@@ -109,10 +109,10 @@ fn create_test_objects() -> Vec<Rc<RefCell<Object>>> {
             ],
             None
         )),
-        Transform::new(Point2::new(400.0, 300.0)),
+        Transform::new(Point2::new(600.0, 300.0)),
         None,
         None,
-        None,
+        Some(Kinematics::new(Vector2::zeros(), 0.0, 0.0)),
     );
 
     // Create a floor
@@ -132,9 +132,7 @@ fn create_test_objects() -> Vec<Rc<RefCell<Object>>> {
         Some(Kinematics::new(Vector2::zeros(), 0.0, 0.0)),
     );
 
-
-
-    [circle, circle2, convex_polygon, concave_polygon, floor].into_iter().map(| s | { Rc::new(RefCell::new(s)) }).collect()
+    [circle, circle2/*, convex_polygon, concave_polygon, floor*/].into_iter().map(| s | { Rc::new(RefCell::new(s)) }).collect()
 }
 
 fn main() {
