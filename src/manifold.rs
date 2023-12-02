@@ -1,12 +1,12 @@
 use nalgebra::Vector2;
+use ordered_float::OrderedFloat;
 use std::cmp::{min, max};
 use std::f64::EPSILON;
-use ordered_float::OrderedFloat;
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::object::Object;
-use crate::shape::{ShapeDiscriminant, Shape};
+use crate::shapes::{ShapeDiscriminant, Shape};
 use crate::types::{Meter, NormalizedCoefficient};
 use crate::constants::{GRAVITY, PEN_ALLOWANCE, PERCENT_CORRECTION};
 use crate::collision::{circle_circle, circle_polygon, polygon_polygon};

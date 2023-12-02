@@ -2,7 +2,7 @@ use nalgebra::{Vector2, distance_squared, Point2};
 use std::f64::{NEG_INFINITY, EPSILON};
 
 use crate::manifold::Manifold;
-use crate::shape::Shapes;
+use crate::shapes::Shapes;
 
 pub fn circle_circle(manifold: &mut Manifold) {
     let a = manifold.a.borrow();

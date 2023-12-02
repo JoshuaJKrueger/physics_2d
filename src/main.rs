@@ -15,19 +15,31 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::f64::INFINITY;
 
+mod circle;
 mod collision;
 mod constants;
 mod custom_math;
+mod kinematics;
 mod manifold;
+mod mass_data;
+mod material;
 mod object;
-mod shape;
+mod polygon;
 mod scene;
+mod shapes;
+mod transform;
 mod types;
 
 use scene::Scene;
-use object::{Object, Transform, Material, MassData, Kinematics};
+use object::Object;
+use transform::Transform;
+use material::Material;
+use mass_data::MassData;
+use kinematics::Kinematics;
 use constants::BLACK;
-use shape::{Shapes, Circle, Polygon};
+use shapes::Shapes;
+use circle::Circle;
+use polygon::Polygon;
 
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
