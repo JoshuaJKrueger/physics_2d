@@ -5,10 +5,12 @@ use ordered_float::OrderedFloat;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::object::{Object, ShapeTag};
+use crate::object::Object;
+use crate::shape::{ShapeDiscriminant, Shape};
 use crate::types::{Meter, NormalizedCoefficient};
 use crate::constants::{GRAVITY, PEN_ALLOWANCE, PERCENT_CORRECTION};
 use crate::collision::{circle_circle, circle_polygon, polygon_polygon};
+use crate::custom_math::cross_s_v;
 
 pub struct Manifold {
     pub a: Rc<RefCell<Object>>,
@@ -20,11 +22,6 @@ pub struct Manifold {
     mixed_restitution: NormalizedCoefficient,
     mixed_dynamic_friction: NormalizedCoefficient,
     mixed_static_friction: NormalizedCoefficient,
-}
-
-// nalgebra doesn't support
-fn cross(a: f64, b: Vector2<f64>) -> Vector2<f64> {
-    Vector2::new(-a * b.y, a * b.x)
 }
 
 impl Manifold {
@@ -43,13 +40,13 @@ impl Manifold {
     }
 
     pub fn solve(&mut self) {
-        let a = self.a.borrow().shape.tag();
-        let b = self.b.borrow().shape.tag();
+        let a = self.a.borrow().shape.discriminant();
+        let b = self.b.borrow().shape.discriminant();
 
         match (a, b) {
-            (ShapeTag::Circle { .. }, ShapeTag::Circle { .. }) => circle_circle(self),
-            (ShapeTag::Polygon { .. }, ShapeTag::Polygon { .. }) => polygon_polygon(self),
-            (ShapeTag::Circle { .. }, ShapeTag::Polygon { .. }) => circle_polygon(self, true),
+            (ShapeDiscriminant::Circle, ShapeDiscriminant::Circle) => circle_circle(self),
+            (ShapeDiscriminant::Polygon, ShapeDiscriminant::Polygon) => polygon_polygon(self),
+            (ShapeDiscriminant::Circle, ShapeDiscriminant::Polygon) => circle_polygon(self, true),
             _ => circle_polygon(self, false),
         };
     }
@@ -62,7 +59,7 @@ impl Manifold {
         for i in 0..self.contact_count {
             let a_radii = self.contacts[i] - self.a.borrow().tx.pos.coords;
             let b_radii = self.contacts[i] - self.b.borrow().tx.pos.coords;
-            let rel_vel = self.b.borrow().kinematics.vel + cross(self.b.borrow().kinematics.angular_vel, b_radii) - self.a.borrow().kinematics.vel - cross(self.a.borrow().kinematics.angular_vel, a_radii);
+            let rel_vel = self.b.borrow().kinematics.vel + cross_s_v(self.b.borrow().kinematics.angular_vel, b_radii) - self.a.borrow().kinematics.vel - cross_s_v(self.a.borrow().kinematics.angular_vel, a_radii);
 
             if rel_vel.norm_squared() < (dt * GRAVITY).norm_squared() + EPSILON {
                 self.mixed_restitution = OrderedFloat(0.0);

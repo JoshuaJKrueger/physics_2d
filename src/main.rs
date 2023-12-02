@@ -9,7 +9,7 @@ use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
 use piston::window::WindowSettings;
 
-use nalgebra::{Point2, Vector2};
+use nalgebra::{Point2, Vector2, Matrix2};
 use ordered_float::OrderedFloat;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -17,14 +17,17 @@ use std::f64::INFINITY;
 
 mod collision;
 mod constants;
+mod custom_math;
 mod manifold;
 mod object;
+mod shape;
 mod scene;
 mod types;
 
 use scene::Scene;
-use object::{Object, Shape, Transform, Material, MassData, Kinematics};
+use object::{Object, Transform, Material, MassData, Kinematics};
 use constants::BLACK;
+use shape::{Shapes, Circle, Polygon};
 
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
@@ -50,7 +53,7 @@ impl App {
 fn create_test_objects() -> Vec<Rc<RefCell<Object>>> {
     // Create a circle
     let circle = Object::new(
-        Shape::Circle { radius: OrderedFloat(50.0) },
+    Shapes::Circle(Circle { radius: OrderedFloat(50.0) } ),
         Transform::new(Point2::new(100.0, 100.0)),
         None,
         None,
@@ -59,7 +62,7 @@ fn create_test_objects() -> Vec<Rc<RefCell<Object>>> {
 
     // Create a circle
     let circle2 = Object::new(
-        Shape::Circle { radius: OrderedFloat(50.0) },
+        Shapes::Circle(Circle { radius: OrderedFloat(50.0) }),
         Transform::new(Point2::new(100.0, 300.0)),
         None,
         None,
@@ -68,14 +71,15 @@ fn create_test_objects() -> Vec<Rc<RefCell<Object>>> {
 
     // Create a convex polygon (triangle)
     let convex_polygon = Object::new(
-        Shape::Polygon {
-            vertices: vec![
+        Shapes::Polygon(Polygon::new(
+            vec![
                 Point2::new(200.0, 200.0),
                 Point2::new(250.0, 300.0),
                 Point2::new(300.0, 200.0),
             ],
-        },
-        Transform::new(Point2::new(0.0, 0.0)),
+            Some(Matrix2::new(0.7, -0.7, 0.7, 0.7)),
+        )),
+        Transform::new(Point2::new(400.0, 200.0)),
         None,
         None,
         None,
@@ -83,16 +87,17 @@ fn create_test_objects() -> Vec<Rc<RefCell<Object>>> {
 
     // Create a concave polygon
     let concave_polygon = Object::new(
-        Shape::Polygon {
-            vertices: vec![
+        Shapes::Polygon(Polygon::new(
+            vec![
                 Point2::new(350.0, 200.0),
                 Point2::new(350.0, 300.0),
                 Point2::new(500.0, 400.0),
                 Point2::new(400.0, 300.0),
                 Point2::new(500.0, 200.0),
             ],
-        },
-        Transform::new(Point2::new(0.0, 0.0)),
+            None
+        )),
+        Transform::new(Point2::new(400.0, 300.0)),
         None,
         None,
         None,
@@ -100,14 +105,15 @@ fn create_test_objects() -> Vec<Rc<RefCell<Object>>> {
 
     // Create a floor
     let floor = Object::new(
-        Shape::Polygon {
-            vertices: vec![
+        Shapes::Polygon(Polygon::new(
+             vec![
                 Point2::new(10.0, 580.0),
                 Point2::new(790.0, 580.0),
                 Point2::new(790.0, 590.0),
                 Point2::new(10.0, 590.0),
             ],
-        },
+            None,
+        )),
         Transform::new(Point2::new(0.0, 0.0)),
         Some(Material::new(INFINITY, OrderedFloat(1.0), OrderedFloat(1.0), OrderedFloat(1.0))),
         Some(MassData::new(INFINITY, INFINITY)),

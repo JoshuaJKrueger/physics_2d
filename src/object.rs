@@ -1,78 +1,15 @@
-use nalgebra::{Point2, Rotation2, Vector2, Matrix2};
-use ordered_float::OrderedFloat;
-use graphics::{Context, ellipse, line::Line, Transformed};
+use graphics::Context;
 use opengl_graphics::GlGraphics;
+
+use nalgebra::{Point2, Rotation2, Vector2};
+
+use ordered_float::OrderedFloat;
 use rand::Rng;
-use std::f64::consts::PI;
-
-use crate::types::{Meter, Radian, Kilogram, InvKilogram, KilogramMeterSquared, MeterSquaredPerKilogram, KilogramPerCubicMeter, NormalizedCoefficient, RadianPerSec, NewtonMeter, MeterPerSec};
-use crate::constants::{WHITE, ONE_THIRD};
 
 
-// nalgebra only supports 3D cross product
-fn cross(a: &Vector2<f64>, b: &Vector2<f64>) -> f64 {
-    a.x * b.y - a.y * b.x
-}
-
-pub enum Shape {
-    Circle { radius: Meter },
-    Polygon { vertices: Vec<Point2<f64>>, orient: Matrix2<f64>, normals: Vec<Vector2<f64>> },
-}
-
-impl Shape {
-    fn calculate_mass_data(&mut self, density: KilogramPerCubicMeter) -> MassData {
-        match self {
-            Shape::Circle { radius } => {
-                let r = **radius;
-                let m = PI * r * r * density;
-                MassData::new(m, m * r * r)
-            },
-            Shape::Polygon { ref mut vertices, .. } => {
-                let mut centroid = Vector2::zeros();
-                let mut area = 0.0;
-                let mut mmi = 0.0;
-
-                // Calculate area and centroid
-                for (p1, p2) in vertices.iter().zip(vertices.iter().cycle().skip(1)) {
-                    // Get the signed area of the triangle formed by (0, 0), p1, and p2
-                    let signed_area = cross(&p1.coords, &p2.coords);
-                    let tri_area = 0.5 * signed_area;
-
-                    area += tri_area;
-                    // Accumulate the weighted centroid coordinates.
-                    centroid += tri_area * ONE_THIRD * (p1.coords + p2.coords);
-
-                    // Calculate squared integral terms for inertia calculation.
-                    let int_x_sqrd = p1.coords.x * p1.coords.x + p2.coords.x * p1.coords.x + p2.coords.x * p2.coords.x;
-                    let int_y_sqrd = p1.coords.y * p1.coords.y + p2.coords.y * p1.coords.y + p2.coords.y * p2.coords.y;
-
-                    mmi += (0.25 * ONE_THIRD * signed_area) * (int_x_sqrd + int_y_sqrd)
-                }
-
-                centroid *= 1.0 / area;
-
-                // Translate vertices to be centered around the origin
-                for vert in vertices {
-                    vert.coords -= centroid;
-                }
-
-                MassData::new(density * area, mmi)
-            },
-        }
-    }
-
-    pub fn tag(&self) -> ShapeTag {
-        match self {
-            Shape::Circle { .. } => ShapeTag::Circle,
-            Shape::Polygon { .. } => ShapeTag::Polygon,
-        }
-    }
-}
-
-pub enum ShapeTag {
-    Circle,
-    Polygon,
-}
+use crate::shape::{Shapes, Shape};
+use crate::types::{Radian, Kilogram, InvKilogram, KilogramMeterSquared, MeterSquaredPerKilogram, KilogramPerCubicMeter, NormalizedCoefficient, RadianPerSec, NewtonMeter, MeterPerSec};
+use crate::custom_math::cross_v_v;
 
 pub struct Transform {
     pub pos: Point2<f64>,
@@ -149,7 +86,7 @@ impl Kinematics {
 
 pub struct Object
 {
-    pub shape: Shape,
+    pub shape: Shapes,
     pub tx: Transform,
     pub mat: Material,
     pub mass_data: MassData,
@@ -158,7 +95,7 @@ pub struct Object
 }
 
 impl Object {
-    pub fn new(mut shape: Shape, tx: Transform, mat: Option<Material>, mass_data: Option<MassData>, kinematics: Option<Kinematics>) -> Self {
+    pub fn new(mut shape: Shapes, tx: Transform, mat: Option<Material>, mass_data: Option<MassData>, kinematics: Option<Kinematics>) -> Self {
         let mat = mat.unwrap_or_else(|| {
             // Generate random material properties
             let density = rand::thread_rng().gen_range(0.1..10.0);
@@ -192,24 +129,10 @@ impl Object {
 
     fn apply_impulse(&mut self, imp: Vector2<f64>, contact_vec: Vector2<f64>) {
         self.kinematics.vel += self.mass_data.inv_mass * imp;
-        self.kinematics.angular_vel += self.mass_data.inv_m_inertia * cross(&contact_vec, &imp);
+        self.kinematics.angular_vel += self.mass_data.inv_m_inertia * cross_v_v(&contact_vec, &imp);
     }
 
     pub fn draw(&self, c: Context, gl: &mut GlGraphics) {
-        match &self.shape {
-            Shape::Circle { radius } => {
-                ellipse::Ellipse::new_border(WHITE, 1.0).draw(ellipse::circle(self.tx.pos.x, self.tx.pos.y, **radius), &c.draw_state, c.transform, gl);
-            }
-            Shape::Polygon { vertices, .. } => {
-                // piston polygon only has a filled version
-                for i in 0..vertices.len() {
-                    let next_index = (i + 1) % vertices.len();
-                    let start = [vertices[i].x, vertices[i].y];
-                    let end = [vertices[next_index].x, vertices[next_index].y];
-    
-                    Line::new(WHITE, 1.0).draw([start[0], start[1], end[0], end[1]], &c.draw_state, c.transform.trans(self.tx.pos.x, self.tx.pos.y), gl);
-                }
-            }
-        }
+        self.shape.draw(c, gl, &self.tx);
     }
 }
