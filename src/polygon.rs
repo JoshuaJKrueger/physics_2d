@@ -37,7 +37,7 @@ impl Polygon {
     }
 
     // Finds the vertex in a polygon that has the maximum projection along a given direction.
-    fn find_support(&self, dir: &Vector2<f64>) -> Point2<f64> {
+    pub fn find_support(&self, dir: &Vector2<f64>) -> Point2<f64> {
         self.vertices.iter().max_by(|v1, v2| {
             v1.coords.dot(dir).partial_cmp(&v2.coords.dot(dir)).unwrap()
         }).map_or(Point2::new(0.0, 0.0), |v| *v)
