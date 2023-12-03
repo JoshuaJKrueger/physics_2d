@@ -74,7 +74,7 @@ impl Shape for Polygon {
             vert.coords -= centroid;
         }
 
-        MassData::new(density * area, mmi)
+        MassData::new(density * -area, -mmi * density)
     }
 
     fn draw(&self, c: Context, gl: &mut GlGraphics, tx: &Transform) {
