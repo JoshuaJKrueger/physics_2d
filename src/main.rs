@@ -9,7 +9,7 @@ use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
 use piston::window::WindowSettings;
 
-use nalgebra::{Point2, Vector2, Matrix2};
+use nalgebra::{Point2, Vector2};
 use ordered_float::OrderedFloat;
 use std::rc::Rc;
 use std::cell::RefCell;
