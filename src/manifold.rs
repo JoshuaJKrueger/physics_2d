@@ -117,8 +117,8 @@ impl Manifold {
         let a_inv_mass = self.a.borrow().mass_data.inv_mass;
         let b_inv_mass = self.b.borrow().mass_data.inv_mass;
 
-        self.a.borrow_mut().tx.pos -= correction * a_inv_mass;
-        self.b.borrow_mut().tx.pos += correction * b_inv_mass;
+        // self.a.borrow_mut().tx.pos -= correction * a_inv_mass;
+        // self.b.borrow_mut().tx.pos += correction * b_inv_mass;
     }
 
     fn infinite_mass_correction(&mut self) {
