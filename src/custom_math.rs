@@ -14,3 +14,7 @@ pub fn cross_s_v(a: f64, b: &Vector2<f64>) -> Vector2<f64> {
 pub fn equal(a: f64, b: f64) -> bool {
     (a - b).abs() <= EPSILON
 }
+
+pub fn bias_gt(a: f64, b: f64) -> bool {
+    a >= b * 0.95 + a * 0.01
+}
