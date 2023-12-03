@@ -112,7 +112,7 @@ fn create_test_objects() -> Vec<Rc<RefCell<Object>>> {
         Transform::new(Point2::new(600.0, 300.0)),
         None,
         None,
-        Some(Kinematics::new(Vector2::zeros(), 0.0, 0.0)),
+        Some(Kinematics::new(Vector2::new(-30.0, -30.0), 0.0, 0.0)),
     );
 
     // Create a floor
