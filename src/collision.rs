@@ -50,7 +50,7 @@ pub fn circle_polygon(manifold: &mut Manifold, circle_first: bool) {
             .fold((0, NEG_INFINITY), |(face_norm, separation), (i, vertex)| {
                 let s = p.normals[i].dot(&(cen - vertex));
                 if s > *c.radius { (face_norm, separation) }
-                else if s > separation { (i, s) }
+                else if s > separation { (i, -s) }
                 else { (face_norm, separation) }
             });
 
@@ -103,6 +103,6 @@ pub fn polygon_polygon(manifold: &mut Manifold) {
     let b = manifold.b.borrow();
 
     if let (Shapes::Polygon(p1), Shapes::Polygon(p2)) = (&a.shape, &b.shape) {
-        unimplemented!();
+        // TODO
     }
 }

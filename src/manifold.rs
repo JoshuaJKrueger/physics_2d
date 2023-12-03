@@ -10,7 +10,7 @@ use crate::shapes::{ShapeDiscriminant, Shape};
 use crate::types::{Meter, NormalizedCoefficient};
 use crate::constants::{GRAVITY, PEN_ALLOWANCE, PERCENT_CORRECTION};
 use crate::collision::{circle_circle, circle_polygon, polygon_polygon};
-use crate::custom_math::cross_s_v;
+use crate::custom_math::{cross_s_v, cross_v_v, equal};
 
 pub struct Manifold {
     pub a: Rc<RefCell<Object>>,
@@ -74,7 +74,41 @@ impl Manifold {
         }
 
         for i in 0..self.contact_count {
-            unimplemented!()
+            let ra = self.contacts[i] - self.a.borrow().tx.pos.coords;
+            let rb = self.contacts[i] - self.b.borrow().tx.pos.coords;
+            let mut rv = self.b.borrow().kinematics.vel + cross_s_v(self.b.borrow().kinematics.angular_vel, &rb) - self.a.borrow().kinematics.vel - cross_s_v(self.a.borrow().kinematics.angular_vel, &ra);
+            let contact_vel = rv.dot(&self.normal);
+
+            if contact_vel > 0.0 { return; }
+
+            let ra_cross_n = cross_v_v(&ra, &self.normal);
+            let rb_cross_n = cross_v_v(&rb, &self.normal);
+            let inv_mass_sum = self.a.borrow().mass_data.inv_mass + self.b.borrow().mass_data.inv_mass + (ra_cross_n * ra_cross_n) * self.a.borrow().mass_data.inv_m_inertia + (rb_cross_n * rb_cross_n) * self.b.borrow().mass_data.inv_m_inertia;
+            let mut imp_s = -(1.0 + *self.mixed_restitution) * contact_vel;
+
+            imp_s /= inv_mass_sum;
+            imp_s /= self.contact_count as f64;
+
+            let imp = self.normal * imp_s;
+            self.a.borrow_mut().apply_impulse(&-imp, &ra);
+            self.b.borrow_mut().apply_impulse(&imp, &rb);
+
+            // TODO
+            // rv = self.b.borrow().kinematics.vel + cross_s_v(self.b.borrow().kinematics.angular_vel, &rb) - self.a.borrow().kinematics.vel - cross_s_v(self.a.borrow().kinematics.angular_vel, &ra);
+
+            // let t = (rv - (self.normal * rv.dot(&self.normal))).normalize();
+            // let mut tan_mag = -rv.dot(&t);
+
+            // tan_mag /= inv_mass_sum;
+            // tan_mag /= self.contact_count as f64;
+
+            // if equal(tan_mag, 0.0) { return; }
+
+            // let tan_imp = if tan_mag.abs() < imp_s * *self.mixed_static_friction { t * tan_mag }
+            // else { t * -imp_s * *self.mixed_dynamic_friction };
+
+            // self.a.borrow_mut().apply_impulse(&-tan_imp, &ra);
+            // self.b.borrow_mut().apply_impulse(&tan_imp, &rb);
         }
     }
 

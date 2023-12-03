@@ -57,7 +57,7 @@ impl Object {
         self.force += f;
     }
 
-    fn apply_impulse(&mut self, imp: &Vector2<f64>, contact_vec: &Vector2<f64>) {
+    pub fn apply_impulse(&mut self, imp: &Vector2<f64>, contact_vec: &Vector2<f64>) {
         self.kinematics.vel += self.mass_data.inv_mass * imp;
         self.kinematics.angular_vel += self.mass_data.inv_m_inertia * cross_v_v(&contact_vec, &imp);
     }
