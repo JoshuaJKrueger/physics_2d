@@ -1,6 +1,6 @@
 use nalgebra::Vector2;
 
-use crate::types::{MeterPerSec, RadianPerSec, NewtonMeter};
+use crate::types::{MeterPerSec, NewtonMeter, RadianPerSec};
 
 pub struct Kinematics {
     pub vel: Vector2<MeterPerSec>,

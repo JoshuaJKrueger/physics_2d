@@ -6,16 +6,14 @@ use nalgebra::Vector2;
 use ordered_float::OrderedFloat;
 use rand::Rng;
 
-
-use crate::shapes::{Shapes, Shape};
 use crate::custom_math::cross_v_v;
-use crate::transform::Transform;
-use crate::material::Material;
-use crate::mass_data::MassData;
 use crate::kinematics::Kinematics;
+use crate::mass_data::MassData;
+use crate::material::Material;
+use crate::shapes::{Shape, Shapes};
+use crate::transform::Transform;
 
-pub struct Object
-{
+pub struct Object {
     pub shape: Shapes,
     pub tx: Transform,
     pub mat: Material,
@@ -25,7 +23,13 @@ pub struct Object
 }
 
 impl Object {
-    pub fn new(mut shape: Shapes, tx: Transform, mat: Option<Material>, mass_data: Option<MassData>, kinematics: Option<Kinematics>) -> Self {
+    pub fn new(
+        mut shape: Shapes,
+        tx: Transform,
+        mat: Option<Material>,
+        mass_data: Option<MassData>,
+        kinematics: Option<Kinematics>,
+    ) -> Self {
         let mat = mat.unwrap_or_else(|| {
             // Generate random material properties
             let density = rand::thread_rng().gen_range(0.1..10.0);
@@ -33,7 +37,11 @@ impl Object {
             let dynamic_friction = rand::thread_rng().gen_range(0.0..1.0);
             let static_friction = rand::thread_rng().gen_range(0.0..1.0);
 
-            Material::new(density, OrderedFloat(restitution), OrderedFloat(dynamic_friction), OrderedFloat(static_friction),
+            Material::new(
+                density,
+                OrderedFloat(restitution),
+                OrderedFloat(dynamic_friction),
+                OrderedFloat(static_friction),
             )
         });
 
@@ -41,7 +49,10 @@ impl Object {
 
         let kinematics = kinematics.unwrap_or_else(|| {
             // Generate random kinematics properties
-            let vel = Vector2::new(rand::thread_rng().gen_range(-10.0..10.0), rand::thread_rng().gen_range(-10.0..10.0));
+            let vel = Vector2::new(
+                rand::thread_rng().gen_range(-10.0..10.0),
+                rand::thread_rng().gen_range(-10.0..10.0),
+            );
             let angular_vel = rand::thread_rng().gen_range(-1.0..1.0);
             let torque = rand::thread_rng().gen_range(-1.0..1.0);
 
@@ -50,7 +61,14 @@ impl Object {
 
         let force = Vector2::zeros();
 
-        Object {shape, tx, mat, mass_data, kinematics, force}
+        Object {
+            shape,
+            tx,
+            mat,
+            mass_data,
+            kinematics,
+            force,
+        }
     }
 
     fn apply_force(&mut self, f: &Vector2<f64>) {

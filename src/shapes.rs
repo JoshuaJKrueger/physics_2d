@@ -1,11 +1,11 @@
 use graphics::Context;
 use opengl_graphics::GlGraphics;
 
-use crate::types::KilogramPerCubicMeter;
-use crate::mass_data::MassData;
-use crate::transform::Transform;
 use crate::circle::Circle;
+use crate::mass_data::MassData;
 use crate::polygon::Polygon;
+use crate::transform::Transform;
+use crate::types::KilogramPerCubicMeter;
 
 pub trait Shape {
     fn calculate_mass_data(&mut self, density: KilogramPerCubicMeter) -> MassData;
@@ -29,7 +29,7 @@ impl Shape for Shapes {
     fn draw(&self, c: Context, gl: &mut GlGraphics, tx: &Transform) {
         match self {
             Shapes::Circle(circ) => circ.draw(c, gl, tx),
-            Shapes::Polygon(p) => p.draw(c, gl, tx)
+            Shapes::Polygon(p) => p.draw(c, gl, tx),
         }
     }
 

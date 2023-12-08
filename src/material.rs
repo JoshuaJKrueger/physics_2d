@@ -8,7 +8,12 @@ pub struct Material {
 }
 
 impl Material {
-    pub fn new(density: KilogramPerCubicMeter, restitution: NormalizedCoefficient, dynamic_friction: NormalizedCoefficient, static_friction: NormalizedCoefficient) -> Self {
+    pub fn new(
+        density: KilogramPerCubicMeter,
+        restitution: NormalizedCoefficient,
+        dynamic_friction: NormalizedCoefficient,
+        static_friction: NormalizedCoefficient,
+    ) -> Self {
         Material {
             density,
             restitution,

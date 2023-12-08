@@ -1,16 +1,16 @@
 use nalgebra::Vector2;
 use ordered_float::OrderedFloat;
-use std::cmp::{min, max};
-use std::f64::EPSILON;
 use std::cell::RefCell;
+use std::cmp::{max, min};
+use std::f64::EPSILON;
 use std::rc::Rc;
 
-use crate::object::Object;
-use crate::shapes::{ShapeDiscriminant, Shape};
-use crate::types::{Meter, NormalizedCoefficient};
-use crate::constants::{GRAVITY, PEN_ALLOWANCE, PERCENT_CORRECTION};
 use crate::collision::{circle_circle, circle_polygon, polygon_polygon};
+use crate::constants::{GRAVITY, PEN_ALLOWANCE, PERCENT_CORRECTION};
 use crate::custom_math::{cross_s_v, cross_v_v, equal};
+use crate::object::Object;
+use crate::shapes::{Shape, ShapeDiscriminant};
+use crate::types::{Meter, NormalizedCoefficient};
 
 pub struct Manifold {
     pub a: Rc<RefCell<Object>>,
@@ -52,14 +52,24 @@ impl Manifold {
     }
 
     pub fn initialize(&mut self, dt: f64) {
-        self.mixed_restitution = min(self.a.borrow().mat.restitution, self.b.borrow().mat.restitution);
-        self.mixed_dynamic_friction = OrderedFloat((self.a.borrow().mat.dynamic_friction * self.b.borrow().mat.dynamic_friction).sqrt());
-        self.mixed_static_friction = OrderedFloat((self.a.borrow().mat.static_friction * self.b.borrow().mat.static_friction).sqrt());
+        self.mixed_restitution = min(
+            self.a.borrow().mat.restitution,
+            self.b.borrow().mat.restitution,
+        );
+        self.mixed_dynamic_friction = OrderedFloat(
+            (self.a.borrow().mat.dynamic_friction * self.b.borrow().mat.dynamic_friction).sqrt(),
+        );
+        self.mixed_static_friction = OrderedFloat(
+            (self.a.borrow().mat.static_friction * self.b.borrow().mat.static_friction).sqrt(),
+        );
 
         for i in 0..self.contact_count {
             let a_radii = self.contacts[i] - self.a.borrow().tx.pos.coords;
             let b_radii = self.contacts[i] - self.b.borrow().tx.pos.coords;
-            let rel_vel = self.b.borrow().kinematics.vel + cross_s_v(self.b.borrow().kinematics.angular_vel, &b_radii) - self.a.borrow().kinematics.vel - cross_s_v(self.a.borrow().kinematics.angular_vel, &a_radii);
+            let rel_vel = self.b.borrow().kinematics.vel
+                + cross_s_v(self.b.borrow().kinematics.angular_vel, &b_radii)
+                - self.a.borrow().kinematics.vel
+                - cross_s_v(self.a.borrow().kinematics.angular_vel, &a_radii);
 
             if rel_vel.norm_squared() < (dt * GRAVITY).norm_squared() + EPSILON {
                 self.mixed_restitution = OrderedFloat(0.0);
@@ -68,7 +78,9 @@ impl Manifold {
     }
 
     pub fn apply_impulse(&mut self) {
-        if self.a.borrow().mass_data.mass.is_infinite() && self.b.borrow().mass_data.mass.is_infinite() {
+        if self.a.borrow().mass_data.mass.is_infinite()
+            && self.b.borrow().mass_data.mass.is_infinite()
+        {
             self.infinite_mass_correction();
             return;
         }
@@ -76,14 +88,22 @@ impl Manifold {
         for i in 0..self.contact_count {
             let ra = self.contacts[i] - self.a.borrow().tx.pos.coords;
             let rb = self.contacts[i] - self.b.borrow().tx.pos.coords;
-            let mut rv = self.b.borrow().kinematics.vel + cross_s_v(self.b.borrow().kinematics.angular_vel, &rb) - self.a.borrow().kinematics.vel - cross_s_v(self.a.borrow().kinematics.angular_vel, &ra);
+            let mut rv = self.b.borrow().kinematics.vel
+                + cross_s_v(self.b.borrow().kinematics.angular_vel, &rb)
+                - self.a.borrow().kinematics.vel
+                - cross_s_v(self.a.borrow().kinematics.angular_vel, &ra);
             let contact_vel = rv.dot(&self.normal);
 
-            if contact_vel > 0.0 { return; }
+            if contact_vel > 0.0 {
+                return;
+            }
 
             let ra_cross_n = cross_v_v(&ra, &self.normal);
             let rb_cross_n = cross_v_v(&rb, &self.normal);
-            let inv_mass_sum = self.a.borrow().mass_data.inv_mass + self.b.borrow().mass_data.inv_mass + (ra_cross_n * ra_cross_n) * self.a.borrow().mass_data.inv_m_inertia + (rb_cross_n * rb_cross_n) * self.b.borrow().mass_data.inv_m_inertia;
+            let inv_mass_sum = self.a.borrow().mass_data.inv_mass
+                + self.b.borrow().mass_data.inv_mass
+                + (ra_cross_n * ra_cross_n) * self.a.borrow().mass_data.inv_m_inertia
+                + (rb_cross_n * rb_cross_n) * self.b.borrow().mass_data.inv_m_inertia;
             let mut imp_s = -(1.0 + *self.mixed_restitution) * contact_vel;
 
             imp_s /= inv_mass_sum;
@@ -113,7 +133,10 @@ impl Manifold {
     }
 
     pub fn positional_correction(&mut self) {
-        let correction = *(max(self.penetration - PEN_ALLOWANCE, OrderedFloat(0.0)) / (self.a.borrow().mass_data.inv_mass + self.b.borrow().mass_data.inv_mass)) * self.normal * *PERCENT_CORRECTION;
+        let correction = *(max(self.penetration - PEN_ALLOWANCE, OrderedFloat(0.0))
+            / (self.a.borrow().mass_data.inv_mass + self.b.borrow().mass_data.inv_mass))
+            * self.normal
+            * *PERCENT_CORRECTION;
         let a_inv_mass = self.a.borrow().mass_data.inv_mass;
         let b_inv_mass = self.b.borrow().mass_data.inv_mass;
 

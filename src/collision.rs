@@ -1,6 +1,6 @@
-use nalgebra::{Vector2, distance_squared, Point2};
+use nalgebra::{distance_squared, Point2, Vector2};
 use ordered_float::OrderedFloat;
-use std::f64::{NEG_INFINITY, EPSILON, INFINITY};
+use std::f64::{EPSILON, INFINITY, NEG_INFINITY};
 
 use crate::custom_math::bias_gt;
 use crate::manifold::Manifold;
@@ -15,14 +15,14 @@ pub fn circle_circle(manifold: &mut Manifold) {
         let norm = b.tx.pos - a.tx.pos;
         let dist_sqr = norm.norm_squared();
         let rad = c1.radius + c2.radius;
-    
+
         if dist_sqr >= *rad * *rad {
             manifold.contact_count = 0;
             return;
         }
-    
+
         manifold.contact_count = 1;
-        
+
         let dist = dist_sqr.sqrt();
         if dist == 0.0 {
             manifold.penetration = c1.radius;
@@ -37,9 +37,11 @@ pub fn circle_circle(manifold: &mut Manifold) {
 }
 
 pub fn circle_polygon(manifold: &mut Manifold, circle_first: bool) {
-    let (a, b) =
-    if circle_first { (manifold.a.borrow(), manifold.b.borrow()) }
-    else { (manifold.b.borrow(), manifold.a.borrow()) };
+    let (a, b) = if circle_first {
+        (manifold.a.borrow(), manifold.b.borrow())
+    } else {
+        (manifold.b.borrow(), manifold.a.borrow())
+    };
 
     if let (Shapes::Circle(c), Shapes::Polygon(p)) = (&a.shape, &b.shape) {
         manifold.contact_count = 0;
@@ -48,16 +50,23 @@ pub fn circle_polygon(manifold: &mut Manifold, circle_first: bool) {
         let cen: Point2<f64> = (p.orient.transpose() * (a.tx.pos - b.tx.pos)).into();
 
         // Find min penetration edge
-        let (face_norm, separation) = p.vertices.iter()
-            .enumerate()
-            .fold((0, NEG_INFINITY), |(face_norm, separation), (i, vertex)| {
+        let (face_norm, separation) = p.vertices.iter().enumerate().fold(
+            (0, NEG_INFINITY),
+            |(face_norm, separation), (i, vertex)| {
                 let s = p.normals[i].dot(&(cen - vertex));
-                if s > *c.radius { (face_norm, separation) }
-                else if s > separation { (i, -s) }
-                else { (face_norm, separation) }
-            });
+                if s > *c.radius {
+                    (face_norm, separation)
+                } else if s > separation {
+                    (i, -s)
+                } else {
+                    (face_norm, separation)
+                }
+            },
+        );
 
-        if separation > *c.radius { return; }
+        if separation > *c.radius {
+            return;
+        }
 
         // Get the face's verts
         let v1 = p.vertices[face_norm];
@@ -80,18 +89,27 @@ pub fn circle_polygon(manifold: &mut Manifold, circle_first: bool) {
 
         // Near v1 or v2
         if d1 <= 0.0 || d2 <= 0.0 {
-            let (vertex, dist) = if d1 <= 0.0 { (v1, distance_squared(&cen, &v1)) } else { (v2, distance_squared(&cen, &v2)) };
+            let (vertex, dist) = if d1 <= 0.0 {
+                (v1, distance_squared(&cen, &v1))
+            } else {
+                (v2, distance_squared(&cen, &v2))
+            };
 
-            if dist > *c.radius * *c.radius { return; }
+            if dist > *c.radius * *c.radius {
+                return;
+            }
 
             manifold.contact_count = 1;
             let mut norm = vertex - cen;
             norm = p.orient * norm;
             manifold.normal = norm.normalize();
             manifold.contacts[0] = p.orient * vertex.coords + b.tx.pos.coords;
-        } else { // Near face
+        } else {
+            // Near face
             let mut norm = p.normals[face_norm];
-            if (cen - v1).dot(&norm) > *c.radius { return; }
+            if (cen - v1).dot(&norm) > *c.radius {
+                return;
+            }
 
             manifold.contact_count = 1;
             norm = p.orient * norm;
@@ -109,23 +127,49 @@ pub fn polygon_polygon(manifold: &mut Manifold) {
         manifold.contact_count = 0;
 
         let (pen_a, face_a) = find_axis_least_pen(p1, p2, a.tx.pos, b.tx.pos);
-        if pen_a >= 0.0 { return; }
+        if pen_a >= 0.0 {
+            return;
+        }
         let (pen_b, face_b) = find_axis_least_pen(p2, p1, a.tx.pos, b.tx.pos);
-        if pen_b >= 0.0 { return; }
+        if pen_b >= 0.0 {
+            return;
+        }
 
-        let (mut ref_idx, flip, ref_poly, inc_poly) =
-            if bias_gt(pen_a, pen_b) { (face_a, false, p1, p2) }
-            else { (face_b, true, p2, p1) };
-        
+        let (mut ref_idx, flip, ref_poly, inc_poly) = if bias_gt(pen_a, pen_b) {
+            (face_a, false, p1, p2)
+        } else {
+            (face_b, true, p2, p1)
+        };
+
         let mut incident_face = [Vector2::zeros(); 2];
-        find_incident_face(&mut incident_face, ref_poly, inc_poly, ref_idx, if flip { a.tx.pos } else { b.tx.pos });
+        find_incident_face(
+            &mut incident_face,
+            ref_poly,
+            inc_poly,
+            ref_idx,
+            if flip { a.tx.pos } else { b.tx.pos },
+        );
 
         let mut v1 = ref_poly.vertices[ref_idx];
-        ref_idx = if ref_idx + 1 == ref_poly.vertices.len() { 0 } else { ref_idx + 1 };
+        ref_idx = if ref_idx + 1 == ref_poly.vertices.len() {
+            0
+        } else {
+            ref_idx + 1
+        };
         let mut v2 = ref_poly.vertices[ref_idx];
 
-        v1 = ref_poly.orient * v1 + if flip { b.tx.pos.coords } else { a.tx.pos.coords };
-        v2 = ref_poly.orient * v2 + if flip { b.tx.pos.coords } else { a.tx.pos.coords };
+        v1 = ref_poly.orient * v1
+            + if flip {
+                b.tx.pos.coords
+            } else {
+                a.tx.pos.coords
+            };
+        v2 = ref_poly.orient * v2
+            + if flip {
+                b.tx.pos.coords
+            } else {
+                a.tx.pos.coords
+            };
 
         let side_plan_norm = (v2 - v1).normalize();
         let ref_face_norm = Vector2::new(side_plan_norm.y, -side_plan_norm.x);
@@ -133,7 +177,11 @@ pub fn polygon_polygon(manifold: &mut Manifold) {
         let neg_side = -side_plan_norm.dot(&v1.coords);
         let pos_side = side_plan_norm.dot(&v2.coords);
 
-        if clip(-side_plan_norm, neg_side, &mut incident_face) < 2 || clip(side_plan_norm, pos_side, &mut incident_face) < 2 { return; }
+        if clip(-side_plan_norm, neg_side, &mut incident_face) < 2
+            || clip(side_plan_norm, pos_side, &mut incident_face) < 2
+        {
+            return;
+        }
 
         manifold.normal = if flip { -ref_face_norm } else { ref_face_norm };
 
@@ -161,7 +209,12 @@ pub fn polygon_polygon(manifold: &mut Manifold) {
     }
 }
 
-fn find_axis_least_pen(a: &Polygon, b: &Polygon, a_pos: Point2<f64>, b_pos: Point2<f64>) -> (f64, usize) {
+fn find_axis_least_pen(
+    a: &Polygon,
+    b: &Polygon,
+    a_pos: Point2<f64>,
+    b_pos: Point2<f64>,
+) -> (f64, usize) {
     let mut best_dist = NEG_INFINITY;
     let mut best_idx = 0;
 
@@ -184,7 +237,13 @@ fn find_axis_least_pen(a: &Polygon, b: &Polygon, a_pos: Point2<f64>, b_pos: Poin
     (best_dist, best_idx)
 }
 
-fn find_incident_face(v: &mut [Vector2<f64>; 2], ref_poly: &Polygon, inc_poly: &Polygon, ref_idx: usize, inc_pos: Point2<f64>) {
+fn find_incident_face(
+    v: &mut [Vector2<f64>; 2],
+    ref_poly: &Polygon,
+    inc_poly: &Polygon,
+    ref_idx: usize,
+    inc_pos: Point2<f64>,
+) {
     let mut ref_norm = ref_poly.normals[ref_idx];
 
     ref_norm = ref_poly.orient * ref_norm;
@@ -203,7 +262,11 @@ fn find_incident_face(v: &mut [Vector2<f64>; 2], ref_poly: &Polygon, inc_poly: &
     }
 
     v[0] = inc_poly.orient * inc_poly.vertices[inc_face_idx].coords + inc_pos.coords;
-    inc_face_idx = if inc_face_idx + 1 >= inc_poly.vertices.len() { 0 } else { inc_face_idx + 1 };
+    inc_face_idx = if inc_face_idx + 1 >= inc_poly.vertices.len() {
+        0
+    } else {
+        inc_face_idx + 1
+    };
     v[1] = inc_poly.orient * inc_poly.vertices[inc_face_idx].coords + inc_pos.coords;
 }
 

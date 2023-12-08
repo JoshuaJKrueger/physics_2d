@@ -1,4 +1,4 @@
-use nalgebra::{Rotation2, Point2, Vector2};
+use nalgebra::{Point2, Rotation2, Vector2};
 
 use crate::types::Radian;
 
