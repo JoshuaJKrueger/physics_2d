@@ -3,7 +3,7 @@ use crate::types::{InvKilogram, Kilogram, KilogramMeterSquared, MeterSquaredPerK
 pub struct MassData {
     pub mass: Kilogram,
     pub inv_mass: InvKilogram,
-    moment_inertia: KilogramMeterSquared,
+    // moment_inertia: KilogramMeterSquared,
     pub inv_m_inertia: MeterSquaredPerKilogram,
 }
 
@@ -19,7 +19,7 @@ impl MassData {
         MassData {
             mass,
             inv_mass,
-            moment_inertia,
+            // moment_inertia,
             inv_m_inertia,
         }
     }
