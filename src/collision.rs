@@ -7,6 +7,11 @@ use crate::manifold::Manifold;
 use crate::polygon::Polygon;
 use crate::shapes::Shapes;
 
+/// Handles collision between two circles and updates the manifold.
+///
+/// # Arguments
+///
+/// * `manifold` - A mutable reference to the collision manifold.
 pub fn circle_circle(manifold: &mut Manifold) {
     let a = manifold.a.borrow();
     let b = manifold.b.borrow();
@@ -36,6 +41,12 @@ pub fn circle_circle(manifold: &mut Manifold) {
     }
 }
 
+/// Handles collision between a circle and a polygon and updates the manifold.
+///
+/// # Arguments
+///
+/// * `manifold` - A mutable reference to the collision manifold.
+/// * `circle_first` - A boolean indicating whether the circle is the first shape in the collision check.
 pub fn circle_polygon(manifold: &mut Manifold, circle_first: bool) {
     let (a, b) = if circle_first {
         (manifold.a.borrow(), manifold.b.borrow())
@@ -119,6 +130,11 @@ pub fn circle_polygon(manifold: &mut Manifold, circle_first: bool) {
     }
 }
 
+/// Handles collision between two polygons and updates the manifold.
+///
+/// # Arguments
+///
+/// * `manifold` - A mutable reference to the collision manifold.
 pub fn polygon_polygon(manifold: &mut Manifold) {
     let a = manifold.a.borrow();
     let b = manifold.b.borrow();
@@ -209,6 +225,18 @@ pub fn polygon_polygon(manifold: &mut Manifold) {
     }
 }
 
+/// Finds the axis of least penetration between two polygons.
+///
+/// # Arguments
+///
+/// * `a` - The first polygon.
+/// * `b` - The second polygon.
+/// * `a_pos` - The position of the first polygon.
+/// * `b_pos` - The position of the second polygon.
+///
+/// # Returns
+///
+/// A tuple containing the penetration depth and the index of the least penetrating face.
 fn find_axis_least_pen(
     a: &Polygon,
     b: &Polygon,
@@ -237,6 +265,15 @@ fn find_axis_least_pen(
     (best_dist, best_idx)
 }
 
+/// Finds the incident face on the second polygon given the reference and incident polygons.
+///
+/// # Arguments
+///
+/// * `v` - A mutable array to store the incident face vertices.
+/// * `ref_poly` - The reference polygon.
+/// * `inc_poly` - The incident polygon.
+/// * `ref_idx` - The index of the reference face.
+/// * `inc_pos` - The position of the incident polygon.
 fn find_incident_face(
     v: &mut [Vector2<f64>; 2],
     ref_poly: &Polygon,
@@ -270,6 +307,17 @@ fn find_incident_face(
     v[1] = inc_poly.orient * inc_poly.vertices[inc_face_idx].coords + inc_pos.coords;
 }
 
+/// Clips a line segment against a plane defined by a normal vector and a constant value.
+///
+/// # Arguments
+///
+/// * `n` - The normal vector of the plane.
+/// * `c` - The constant value representing the distance from the origin.
+/// * `face` - A mutable array containing the line segment vertices to be clipped.
+///
+/// # Returns
+///
+/// The number of vertices after clipping.
 fn clip(n: Vector2<f64>, c: f64, face: &mut [Vector2<f64>; 2]) -> usize {
     let mut sp = 0;
     let mut out = [face[0], face[1]];

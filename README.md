@@ -1,6 +1,6 @@
 # physics_2d #
 
-This project is a simple physics sandbox implemented in Rust using the [Piston graphics crate](https://github.com/PistonDevelopers/graphics). The sandbox simulates basic physics interactions between objects with different shapes, such as circles. The main goal is to provide a starting point for experimenting with physics simulations in a 2D environment.
+This project is a simple physics sandbox implemented in Rust using the [Piston graphics crate](https://github.com/PistonDevelopers/graphics). The sandbox simulates basic physics interactions between objects. The main goal is to provide a starting point for experimenting with physics simulations in a 2D environment.
 
 ## Table of Contents ##
 
@@ -16,10 +16,13 @@ This project is a simple physics sandbox implemented in Rust using the [Piston g
 ## Usage ##
 
 Upon running the project, a window titled "Sandbox" will open.
-The sandbox contains two test objects: two circles moving toward one another.
-They should move past each other as collision restitution has not been implemented yet.
+The sandbox contains a few test objects with varying properties.
+You can see how they interact, and modify them to create new situations.
 
-## Project Structure ##
+## Demonstration ##
 
-main.rs: Contains the main application code, including the setup of the Piston window, the main game loop, and the simulation logic.
-collision.rs: Defines collision-related structures and functions, including Axis-Aligned Bounding Box (AABB) and circle-to-circle collision detection.
+<figure class="video_container">
+    <video controls="true" allowfullscreen="true">
+        <source src="demonstration.mp4", type="video/mp4">
+    </video>
+</figure>

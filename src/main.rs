@@ -41,12 +41,20 @@ use scene::Scene;
 use shapes::Shapes;
 use transform::Transform;
 
+/// Represents the application's main structure, including the OpenGL backend and scene.
 pub struct App {
-    gl: GlGraphics, // OpenGL drawing backend.
+    /// The OpenGL drawing backend.
+    gl: GlGraphics,
+    /// The scene containing objects and contacts.
     scene: Scene,
 }
 
 impl App {
+    /// Renders the scene using the specified rendering arguments.
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - Rendering arguments containing viewport information.
     fn render(&mut self, args: &RenderArgs) {
         use graphics::*;
 
@@ -58,11 +66,17 @@ impl App {
             });
     }
 
+    /// Updates the scene based on the specified update arguments.
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - Update arguments containing the time delta (`dt`).
     fn update(&mut self, args: &UpdateArgs) {
         self.scene.step(args.dt);
     }
 }
 
+/// Creates test objects for the scene and returns them as a vector of `Object` references.
 fn create_test_objects() -> Vec<Rc<RefCell<Object>>> {
     // Create a circle
     let circle = Object::new(
@@ -148,6 +162,8 @@ fn create_test_objects() -> Vec<Rc<RefCell<Object>>> {
         .collect()
 }
 
+/// The main function responsible for creating the window, initializing the application,
+/// and handling the main game loop.
 fn main() {
     // Change this to OpenGL::V2_1 if not working.
     let opengl = OpenGL::V3_2;

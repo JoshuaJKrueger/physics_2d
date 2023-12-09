@@ -8,32 +8,20 @@ use crate::constants::{GRAVITY, GREEN, RED};
 use crate::manifold::Manifold;
 use crate::object::Object;
 
-// Semi-implicit Euler method
-fn integrate_forces(obj: &mut Object, dt: f64) {
-    if obj.mass_data.mass.is_infinite() {
-        return;
-    }
-
-    obj.kinematics.vel += (obj.force * obj.mass_data.inv_mass + GRAVITY) * (dt / 2.0);
-    obj.kinematics.angular_vel += obj.kinematics.torque * obj.mass_data.inv_m_inertia * (dt / 2.0);
-}
-
-fn integrate_velocities(obj: &mut Object, dt: f64) {
-    if obj.mass_data.mass.is_infinite() {
-        return;
-    }
-
-    obj.tx.pos += obj.kinematics.vel * dt;
-    obj.tx.orientation += obj.kinematics.angular_vel * dt;
-    integrate_forces(obj, dt);
-}
-
+/// Represents a physics scene with a collection of objects and contact manifolds.
 pub struct Scene {
+    /// A collection of objects in the scene, each wrapped in a `RefCell` and reference-counted `Rc`.
     pub objects: Vec<Rc<RefCell<Object>>>,
+    /// A collection of contact manifolds representing interactions between objects.
     pub contacts: Vec<Manifold>,
 }
 
 impl Scene {
+    /// Advances the simulation by a specified time step.
+    ///
+    /// # Arguments
+    ///
+    /// * `dt` - The time step.
     pub fn step(&mut self, dt: f64) {
         self.contacts.clear();
 
@@ -82,6 +70,12 @@ impl Scene {
         }
     }
 
+    /// Renders the scene, including objects and visualizations for contact points and normals.
+    ///
+    /// # Arguments
+    ///
+    /// * `c` - The graphics context.
+    /// * `gl` - The OpenGL graphics object.
     pub fn render(&self, c: Context, gl: &mut GlGraphics) {
         for object in &self.objects {
             object.borrow().draw(c, gl);
@@ -114,4 +108,35 @@ impl Scene {
             }
         }
     }
+}
+
+/// Semi-implicit Euler method for integrating forces over time.
+///
+/// # Arguments
+///
+/// * `obj` - The object to integrate forces for.
+/// * `dt` - The time step.
+fn integrate_forces(obj: &mut Object, dt: f64) {
+    if obj.mass_data.mass.is_infinite() {
+        return;
+    }
+
+    obj.kinematics.vel += (obj.force * obj.mass_data.inv_mass + GRAVITY) * (dt / 2.0);
+    obj.kinematics.angular_vel += obj.kinematics.torque * obj.mass_data.inv_m_inertia * (dt / 2.0);
+}
+
+/// Semi-implicit Euler method for integrating velocities over time.
+///
+/// # Arguments
+///
+/// * `obj` - The object to integrate velocities for.
+/// * `dt` - The time step.
+fn integrate_velocities(obj: &mut Object, dt: f64) {
+    if obj.mass_data.mass.is_infinite() {
+        return;
+    }
+
+    obj.tx.pos += obj.kinematics.vel * dt;
+    obj.tx.orientation += obj.kinematics.angular_vel * dt;
+    integrate_forces(obj, dt);
 }

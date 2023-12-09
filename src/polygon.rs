@@ -11,13 +11,27 @@ use crate::shapes::{Shape, ShapeDiscriminant};
 use crate::transform::Transform;
 use crate::types::KilogramPerCubicMeter;
 
+/// Represents a polygon in the simulation.
 pub struct Polygon {
+    /// The orientation matrix of the polygon.
     pub orient: Matrix2<f64>,
+    /// The vertices of the polygon.
     pub vertices: Vec<Point2<f64>>,
+    /// The normals of the polygon.
     pub normals: Vec<Vector2<f64>>,
 }
 
 impl Polygon {
+    /// Creates a new polygon with the specified vertices and orientation.
+    ///
+    /// # Arguments
+    ///
+    /// * `vertices` - The vertices of the polygon.
+    /// * `orient` - Optional orientation matrix. If not provided, the identity matrix is used.
+    ///
+    /// # Returns
+    ///
+    /// A new `Polygon` instance.
     pub fn new(vertices: Vec<Point2<f64>>, orient: Option<Matrix2<f64>>) -> Self {
         let orient = orient.unwrap_or_else(Matrix2::identity);
 
@@ -42,7 +56,15 @@ impl Polygon {
     //     unimplemented!()
     // }
 
-    // Finds the vertex in a polygon that has the maximum projection along a given direction.
+    /// Finds the support point of the polygon in the given direction.
+    ///
+    /// # Arguments
+    ///
+    /// * `dir` - The direction vector.
+    ///
+    /// # Returns
+    ///
+    /// The support point of the polygon in the given direction.
     pub fn find_support(&self, dir: &Vector2<f64>) -> Point2<f64> {
         self.vertices
             .iter()
@@ -52,6 +74,15 @@ impl Polygon {
 }
 
 impl Shape for Polygon {
+    /// Calculates the mass and moment of inertia data for the polygon.
+    ///
+    /// # Arguments
+    ///
+    /// * `density` - The density of the material the polygon is made of.
+    ///
+    /// # Returns
+    ///
+    /// A `MassData` structure containing the calculated mass and moment of inertia.
     fn calculate_mass_data(&mut self, density: KilogramPerCubicMeter) -> MassData {
         let mut centroid = Vector2::zeros();
         let mut area = 0.0;
@@ -90,6 +121,13 @@ impl Shape for Polygon {
         MassData::new(density * -area, -mmi * density)
     }
 
+    /// Draws the polygon using OpenGL graphics.
+    ///
+    /// # Arguments
+    ///
+    /// * `c` - The graphics context.
+    /// * `gl` - The OpenGL graphics.
+    /// * `tx` - The transform information.
     fn draw(&self, c: Context, gl: &mut GlGraphics, tx: &Transform) {
         // piston polygon only has a filled version
         for i in 0..self.vertices.len() {
@@ -106,6 +144,7 @@ impl Shape for Polygon {
         }
     }
 
+    /// Returns the discriminant associated with the polygon shape.
     fn discriminant(&self) -> ShapeDiscriminant {
         ShapeDiscriminant::Polygon
     }
@@ -162,6 +201,15 @@ impl Shape for Polygon {
 //     hull
 // }
 
+/// Computes the normals for the edges of a polygon.
+///
+/// # Arguments
+///
+/// * `verts` - The vertices of the polygon.
+///
+/// # Returns
+///
+/// A vector containing the computed normals for the edges of the polygon.
 fn compute_norms(verts: &[Point2<f64>]) -> Vec<Vector2<f64>> {
     verts
         .iter()

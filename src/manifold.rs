@@ -12,19 +12,39 @@ use crate::object::Object;
 use crate::shapes::{Shape, ShapeDiscriminant};
 use crate::types::{Meter, NormalizedCoefficient};
 
+/// Represents a collision manifold between two objects.
 pub struct Manifold {
+    /// The first object involved in the collision.
     pub a: Rc<RefCell<Object>>,
+    /// The second object involved in the collision.
     pub b: Rc<RefCell<Object>>,
+    /// The penetration depth of the collision.
     pub penetration: Meter,
+    /// The collision normal pointing from object A to object B.
     pub normal: Vector2<f64>,
+    /// Array of contact points in world coordinates.
     pub contacts: [Vector2<f64>; 2],
+    /// Number of valid contact points.
     pub contact_count: usize,
+    /// Coefficient of restitution for the collision.
     mixed_restitution: NormalizedCoefficient,
+    /// Coefficient of dynamic friction for the collision.
     mixed_dynamic_friction: NormalizedCoefficient,
+    /// Coefficient of static friction for the collision.
     mixed_static_friction: NormalizedCoefficient,
 }
 
 impl Manifold {
+    /// Creates a new `Manifold` instance representing a collision between two objects.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - The first object involved in the collision.
+    /// * `b` - The second object involved in the collision.
+    ///
+    /// # Returns
+    ///
+    /// A new `Manifold` instance.
     pub fn new(a: Rc<RefCell<Object>>, b: Rc<RefCell<Object>>) -> Manifold {
         Manifold {
             a,
@@ -39,6 +59,7 @@ impl Manifold {
         }
     }
 
+    /// Dispatches collision detection to the appropriate function based on the shape of a and b.
     pub fn solve(&mut self) {
         let a = self.a.borrow().shape.discriminant();
         let b = self.b.borrow().shape.discriminant();
@@ -51,6 +72,11 @@ impl Manifold {
         };
     }
 
+    /// Initializes the manifold properties based on the object materials and contact points.
+    ///
+    /// # Arguments
+    ///
+    /// * `dt` - The time step for the simulation.
     pub fn initialize(&mut self, dt: f64) {
         self.mixed_restitution = min(
             self.a.borrow().mat.restitution,
@@ -77,6 +103,7 @@ impl Manifold {
         }
     }
 
+    /// Applies impulse to resolve the collision.
     pub fn apply_impulse(&mut self) {
         if self.a.borrow().mass_data.mass.is_infinite()
             && self.b.borrow().mass_data.mass.is_infinite()
@@ -113,6 +140,7 @@ impl Manifold {
             self.a.borrow_mut().apply_impulse(&-imp, &ra);
             self.b.borrow_mut().apply_impulse(&imp, &rb);
 
+            // Fiction resolution
             // TODO
             // rv = self.b.borrow().kinematics.vel + cross_s_v(self.b.borrow().kinematics.angular_vel, &rb) - self.a.borrow().kinematics.vel - cross_s_v(self.a.borrow().kinematics.angular_vel, &ra);
 
@@ -132,6 +160,7 @@ impl Manifold {
         }
     }
 
+    /// Keeps objects from intersecting
     pub fn positional_correction(&mut self) {
         // let correction = *(max(self.penetration - PEN_ALLOWANCE, OrderedFloat(0.0))
         //     / (self.a.borrow().mass_data.inv_mass + self.b.borrow().mass_data.inv_mass))
@@ -144,6 +173,7 @@ impl Manifold {
         // self.b.borrow_mut().tx.pos += correction * b_inv_mass;
     }
 
+    /// When two objects with infinite mass collide, their velocities are set to zero
     fn infinite_mass_correction(&mut self) {
         self.a.borrow_mut().kinematics.vel = Vector2::zeros();
         self.b.borrow_mut().kinematics.vel = Vector2::zeros();
