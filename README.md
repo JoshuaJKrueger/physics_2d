@@ -16,7 +16,7 @@ You can see how they interact, and modify them to create new situations.
 ## Demonstration ##
 
 <figure class="video_container">
-    <video controls="true" allowfullscreen="true">
+    <video muted="true" controls="true" allowfullscreen="true">
         <source src="demonstration.mp4", type="video/mp4">
     </video>
 </figure>
