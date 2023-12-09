@@ -17,6 +17,7 @@ pub struct Scene {
 }
 
 impl Scene {
+    // Adapted from https://code.tutsplus.com/series/how-to-create-a-custom-physics-engine--gamedev-12715
     /// Advances the simulation by a specified time step.
     ///
     /// # Arguments
@@ -110,6 +111,7 @@ impl Scene {
     }
 }
 
+// Adapted from https://code.tutsplus.com/series/how-to-create-a-custom-physics-engine--gamedev-12715
 /// Semi-implicit Euler method for integrating forces over time.
 ///
 /// # Arguments
@@ -125,6 +127,7 @@ fn integrate_forces(obj: &mut Object, dt: f64) {
     obj.kinematics.angular_vel += obj.kinematics.torque * obj.mass_data.inv_m_inertia * (dt / 2.0);
 }
 
+// Adapted from https://code.tutsplus.com/series/how-to-create-a-custom-physics-engine--gamedev-12715
 /// Semi-implicit Euler method for integrating velocities over time.
 ///
 /// # Arguments

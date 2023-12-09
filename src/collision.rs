@@ -130,6 +130,7 @@ pub fn circle_polygon(manifold: &mut Manifold, circle_first: bool) {
     }
 }
 
+// Adapted from https://code.tutsplus.com/series/how-to-create-a-custom-physics-engine--gamedev-12715
 /// Handles collision between two polygons and updates the manifold.
 ///
 /// # Arguments

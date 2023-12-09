@@ -74,6 +74,7 @@ impl Polygon {
 }
 
 impl Shape for Polygon {
+    // Adapted from https://code.tutsplus.com/series/how-to-create-a-custom-physics-engine--gamedev-12715
     /// Calculates the mass and moment of inertia data for the polygon.
     ///
     /// # Arguments
@@ -168,6 +169,7 @@ impl Shape for Polygon {
 //     right_most
 // }
 
+// Adapted from https://code.tutsplus.com/series/how-to-create-a-custom-physics-engine--gamedev-12715
 // fn build_hull(verts: &[Point2<f64>], right_most_idx: usize) -> Vec<Point2<f64>> {
 //     let mut hull = Vec::new();
 //     let mut index_hull = right_most_idx;
