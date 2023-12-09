@@ -140,3 +140,57 @@ fn integrate_velocities(obj: &mut Object, dt: f64) {
     obj.tx.orientation += obj.kinematics.angular_vel * dt;
     integrate_forces(obj, dt);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use nalgebra::Point2;
+    use ordered_float::OrderedFloat;
+
+    use crate::{circle::Circle, shapes::Shapes, transform::Transform};
+
+    #[test]
+    fn test_integrate_forces() {
+        let circle = Shapes::Circle(Circle {
+            radius: OrderedFloat(1.0),
+        });
+        let tx = Transform::new(Point2::new(0.0, 0.0));
+        let mut a = Object::new(circle, tx, None, None, None);
+        let initial_vel = a.kinematics.vel.clone();
+        let initial_angular_vel = a.kinematics.angular_vel;
+
+        a.force = Vector2::new(1.0, 2.0);
+        a.kinematics.torque = 3.0;
+
+        let dt = 0.1;
+
+        integrate_forces(&mut a, dt);
+
+        assert_ne!(a.kinematics.vel, initial_vel);
+        assert_ne!(a.kinematics.angular_vel, initial_angular_vel);
+    }
+
+    #[test]
+    fn test_integrate_velocities() {
+        let circle = Shapes::Circle(Circle {
+            radius: OrderedFloat(1.0),
+        });
+        let tx = Transform::new(Point2::new(0.0, 0.0));
+        let mut obj = Object::new(circle, tx, None, None, None);
+        let initial_pos = obj.tx.pos;
+        let initial_orientation = obj.tx.orientation;
+
+        obj.kinematics.vel = Vector2::new(1.0, 2.0);
+        obj.kinematics.angular_vel = 3.0;
+        obj.force = Vector2::new(4.0, 5.0);
+        obj.kinematics.torque = 6.0;
+
+        let dt = 0.1;
+
+        integrate_velocities(&mut obj, dt);
+
+        assert_ne!(obj.tx.pos, initial_pos);
+        assert_ne!(obj.tx.orientation, initial_orientation);
+    }
+}

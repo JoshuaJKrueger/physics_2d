@@ -179,3 +179,35 @@ impl Manifold {
         self.b.borrow_mut().kinematics.vel = Vector2::zeros();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use nalgebra::Point2;
+
+    use crate::{circle::Circle, shapes::Shapes, transform::Transform};
+
+    #[test]
+    fn test_apply_impulse() {
+        let circle1 = Shapes::Circle(Circle {
+            radius: OrderedFloat(4.0),
+        });
+        let circle2 = Shapes::Circle(Circle {
+            radius: OrderedFloat(4.0),
+        });
+        let tx1 = Transform::new(Point2::new(0.0, 0.0));
+        let tx2 = Transform::new(Point2::new(3.0, 0.0));
+        let a = RefCell::new(Object::new(circle1, tx1, None, None, None));
+        let b = RefCell::new(Object::new(circle2, tx2, None, None, None));
+        let mut manifold = Manifold::new(Rc::new(a), Rc::new(b));
+        let initial_vel_a = manifold.a.borrow().kinematics.vel.clone();
+        let initial_vel_b = manifold.b.borrow().kinematics.vel.clone();
+
+        manifold.solve();
+        manifold.apply_impulse();
+
+        assert_ne!(manifold.a.borrow().kinematics.vel, initial_vel_a);
+        assert_ne!(manifold.b.borrow().kinematics.vel, initial_vel_b);
+    }
+}

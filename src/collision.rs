@@ -347,3 +347,212 @@ fn clip(n: Vector2<f64>, c: f64, face: &mut [Vector2<f64>; 2]) -> usize {
 
     sp
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std::{cell::RefCell, rc::Rc};
+
+    use nalgebra::Matrix2;
+
+    use crate::{circle::Circle, object::Object, transform::Transform};
+
+    #[test]
+    fn test_circle_circle_no_collision() {
+        let circle1 = Shapes::Circle(Circle {
+            radius: OrderedFloat(1.0),
+        });
+        let circle2 = Shapes::Circle(Circle {
+            radius: OrderedFloat(1.0),
+        });
+        let tx1 = Transform::new(Point2::new(0.0, 0.0));
+        let tx2 = Transform::new(Point2::new(5.0, 0.0));
+        let a = RefCell::new(Object::new(circle1, tx1, None, None, None));
+        let b = RefCell::new(Object::new(circle2, tx2, None, None, None));
+        let mut manifold = Manifold::new(Rc::new(a), Rc::new(b));
+
+        circle_circle(&mut manifold);
+
+        assert_eq!(manifold.contact_count, 0);
+    }
+
+    #[test]
+    fn test_circle_circle_collision() {
+        let circle1 = Shapes::Circle(Circle {
+            radius: OrderedFloat(2.0),
+        });
+        let circle2 = Shapes::Circle(Circle {
+            radius: OrderedFloat(2.0),
+        });
+        let tx1 = Transform::new(Point2::new(0.0, 0.0));
+        let tx2 = Transform::new(Point2::new(3.0, 0.0));
+        let a = RefCell::new(Object::new(circle1, tx1, None, None, None));
+        let b = RefCell::new(Object::new(circle2, tx2, None, None, None));
+        let mut manifold = Manifold::new(Rc::new(a), Rc::new(b));
+
+        circle_circle(&mut manifold);
+
+        assert_eq!(manifold.contact_count, 1);
+    }
+
+    #[test]
+    fn test_circle_polygon_no_collision() {
+        let circle = Shapes::Circle(Circle {
+            radius: OrderedFloat(2.0),
+        });
+        let polygon = Shapes::Polygon(Polygon {
+            vertices: vec![
+                Point2::new(0.0, 0.0),
+                Point2::new(4.0, 0.0),
+                Point2::new(4.0, 4.0),
+                Point2::new(0.0, 4.0),
+            ],
+            normals: vec![
+                Vector2::new(0.0, -1.0),
+                Vector2::new(1.0, 0.0),
+                Vector2::new(0.0, 1.0),
+                Vector2::new(-1.0, 0.0),
+            ],
+            orient: Matrix2::identity(),
+        });
+
+        let tx_circle = Transform::new(Point2::new(10.0, 10.0));
+        let tx_polygon = Transform::new(Point2::new(0.0, 0.0));
+
+        let a = RefCell::new(Object::new(circle, tx_circle, None, None, None));
+        let b = RefCell::new(Object::new(polygon, tx_polygon, None, None, None));
+
+        let mut manifold = Manifold::new(Rc::new(a), Rc::new(b));
+        circle_polygon(&mut manifold, true);
+
+        assert_eq!(manifold.contact_count, 0);
+    }
+
+    #[test]
+    fn test_circle_polygon_collision() {
+        let circle = Shapes::Circle(Circle {
+            radius: OrderedFloat(4.0),
+        });
+        let polygon = Shapes::Polygon(Polygon {
+            vertices: vec![
+                Point2::new(0.0, 0.0),
+                Point2::new(4.0, 0.0),
+                Point2::new(4.0, 4.0),
+                Point2::new(0.0, 4.0),
+            ],
+            normals: vec![
+                Vector2::new(0.0, -1.0),
+                Vector2::new(1.0, 0.0),
+                Vector2::new(0.0, 1.0),
+                Vector2::new(-1.0, 0.0),
+            ],
+            orient: Matrix2::identity(),
+        });
+
+        let tx_circle = Transform::new(Point2::new(0.0, 0.0));
+        let tx_polygon = Transform::new(Point2::new(0.0, 0.0));
+
+        let a = RefCell::new(Object::new(circle, tx_circle, None, None, None));
+        let b = RefCell::new(Object::new(polygon, tx_polygon, None, None, None));
+
+        let mut manifold = Manifold::new(Rc::new(a), Rc::new(b));
+        circle_polygon(&mut manifold, true);
+
+        assert_eq!(manifold.contact_count, 1);
+        assert!(manifold.penetration > OrderedFloat(0.0));
+    }
+
+    #[test]
+    fn test_polygon_polygon_no_collision() {
+        let polygon1 = Shapes::Polygon(Polygon {
+            vertices: vec![
+                Point2::new(0.0, 0.0),
+                Point2::new(4.0, 0.0),
+                Point2::new(4.0, 4.0),
+                Point2::new(0.0, 4.0),
+            ],
+            normals: vec![
+                Vector2::new(0.0, -1.0),
+                Vector2::new(1.0, 0.0),
+                Vector2::new(0.0, 1.0),
+                Vector2::new(-1.0, 0.0),
+            ],
+            orient: Matrix2::identity(),
+        });
+
+        let polygon2 = Shapes::Polygon(Polygon {
+            vertices: vec![
+                Point2::new(5.0, 5.0),
+                Point2::new(9.0, 5.0),
+                Point2::new(9.0, 9.0),
+                Point2::new(5.0, 9.0),
+            ],
+            normals: vec![
+                Vector2::new(0.0, -1.0),
+                Vector2::new(1.0, 0.0),
+                Vector2::new(0.0, 1.0),
+                Vector2::new(-1.0, 0.0),
+            ],
+            orient: Matrix2::identity(),
+        });
+
+        let tx_polygon1 = Transform::new(Point2::new(0.0, 0.0));
+        let tx_polygon2 = Transform::new(Point2::new(10.0, 10.0));
+
+        let a = RefCell::new(Object::new(polygon1, tx_polygon1, None, None, None));
+        let b = RefCell::new(Object::new(polygon2, tx_polygon2, None, None, None));
+
+        let mut manifold = Manifold::new(Rc::new(a), Rc::new(b));
+        polygon_polygon(&mut manifold);
+
+        assert_eq!(manifold.contact_count, 0);
+    }
+
+    #[test]
+    fn test_polygon_polygon_collision() {
+        let polygon1 = Shapes::Polygon(Polygon {
+            vertices: vec![
+                Point2::new(0.0, 0.0),
+                Point2::new(4.0, 0.0),
+                Point2::new(4.0, 4.0),
+                Point2::new(0.0, 4.0),
+            ],
+            normals: vec![
+                Vector2::new(0.0, -1.0),
+                Vector2::new(1.0, 0.0),
+                Vector2::new(0.0, 1.0),
+                Vector2::new(-1.0, 0.0),
+            ],
+            orient: Matrix2::identity(),
+        });
+
+        let polygon2 = Shapes::Polygon(Polygon {
+            vertices: vec![
+                Point2::new(2.0, 2.0),
+                Point2::new(6.0, 2.0),
+                Point2::new(6.0, 6.0),
+                Point2::new(2.0, 6.0),
+            ],
+            normals: vec![
+                Vector2::new(0.0, -1.0),
+                Vector2::new(1.0, 0.0),
+                Vector2::new(0.0, 1.0),
+                Vector2::new(-1.0, 0.0),
+            ],
+            orient: Matrix2::identity(),
+        });
+
+        let tx_polygon1 = Transform::new(Point2::new(0.0, 0.0));
+        let tx_polygon2 = Transform::new(Point2::new(0.0, 0.0));
+
+        let a = RefCell::new(Object::new(polygon1, tx_polygon1, None, None, None));
+        let b = RefCell::new(Object::new(polygon2, tx_polygon2, None, None, None));
+
+        let mut manifold = Manifold::new(Rc::new(a), Rc::new(b));
+        polygon_polygon(&mut manifold);
+
+        assert!(manifold.contact_count > 0);
+        assert!(manifold.penetration > OrderedFloat(0.0));
+    }
+}
