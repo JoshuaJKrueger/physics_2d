@@ -1,12 +1,12 @@
 use nalgebra::Vector2;
 use ordered_float::OrderedFloat;
 use std::cell::RefCell;
-use std::cmp::min;
+use std::cmp::{max, min};
 use std::f64::EPSILON;
 use std::rc::Rc;
 
 use crate::collision::{circle_circle, circle_polygon, polygon_polygon};
-use crate::constants::GRAVITY;
+use crate::constants::{GRAVITY, PEN_ALLOWANCE, PERCENT_CORRECTION};
 use crate::custom_math::{cross_s_v, cross_v_v};
 use crate::object::Object;
 use crate::shapes::{Shape, ShapeDiscriminant};
@@ -162,15 +162,15 @@ impl Manifold {
 
     /// Keeps objects from intersecting
     pub fn positional_correction(&mut self) {
-        // let correction = *(max(self.penetration - PEN_ALLOWANCE, OrderedFloat(0.0))
-        //     / (self.a.borrow().mass_data.inv_mass + self.b.borrow().mass_data.inv_mass))
-        //     * self.normal
-        //     * *PERCENT_CORRECTION;
-        // let a_inv_mass = self.a.borrow().mass_data.inv_mass;
-        // let b_inv_mass = self.b.borrow().mass_data.inv_mass;
+        let correction = *(max(self.penetration - PEN_ALLOWANCE, OrderedFloat(0.0))
+            / (self.a.borrow().mass_data.inv_mass + self.b.borrow().mass_data.inv_mass))
+            * self.normal
+            * *PERCENT_CORRECTION;
+        let a_inv_mass = self.a.borrow().mass_data.inv_mass;
+        let b_inv_mass = self.b.borrow().mass_data.inv_mass;
 
-        // self.a.borrow_mut().tx.pos -= correction * a_inv_mass;
-        // self.b.borrow_mut().tx.pos += correction * b_inv_mass;
+        self.a.borrow_mut().tx.pos -= correction * a_inv_mass;
+        self.b.borrow_mut().tx.pos += correction * b_inv_mass;
     }
 
     /// When two objects with infinite mass collide, their velocities are set to zero
